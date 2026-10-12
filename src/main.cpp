@@ -1,142 +1,25 @@
 
-#include <iostream>
-#include <string>
-#include <vector>
 #include <filesystem>
 
 #include <GLFW/glfw3.h>
+
 #include "app_icon.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "tab/windows/scene_editor.h"
-#include "tab/windows/node_graph_editor.h"
-#include "tab/windows/inspector.h"
 
-enum class PanelType
-{
-    SceneEditor,
-    NodeGraphEditor,
-    Inspector
-};
-
-struct Panel
-{
-    int id;
-    int instance;
-    PanelType type;
-    bool open;
-    bool floatOnFirstFrame;
-};
-
-std::vector<Panel> panels;
-
-int nextPanelId = 1;
-int sceneEditorCount = 0;
-int nodeGraphEditorCount = 0;
-int inspectorCount = 0;
-
-void AddPanel(PanelType type, bool floating = true)
-{
-    int instance = 0;
-
-    switch (type)
-    {
-    case PanelType::SceneEditor:
-        instance = ++sceneEditorCount;
-        break;
-
-    case PanelType::NodeGraphEditor:
-        instance = ++nodeGraphEditorCount;
-        break;
-
-    case PanelType::Inspector:
-        instance = ++inspectorCount;
-        break;
-    }
-
-    panels.push_back({
-        nextPanelId++,
-        instance,
-        type,
-        true,
-        floating
-        });
-}
-
-std::string GetPanelTitle(const Panel& panel)
-{
-    std::string name;
-
-    switch (panel.type)
-    {
-    case PanelType::SceneEditor:
-        name = "Scene Editor";
-        break;
-
-    case PanelType::NodeGraphEditor:
-        name = "Node Graph Editor";
-        break;
-
-    case PanelType::Inspector:
-        name = "Inspector";
-        break;
-    }
-
-    return name + " " + std::to_string(panel.instance) +
-        "###CNodePanel_" + std::to_string(panel.id);
-}
-
-void DrawPanel(Panel& panel)
-{
-    if (!panel.open)
-        return;
-
-    std::string title = GetPanelTitle(panel);
-
-    if (panel.floatOnFirstFrame)
-    {
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        float offset = static_cast<float>((panel.id % 6) * 28);
-
-        ImGui::SetNextWindowPos(
-            ImVec2(viewport->WorkPos.x + 80 + offset,
-                viewport->WorkPos.y + 60 + offset),
-            ImGuiCond_Appearing
-        );
-
-        ImGui::SetNextWindowSize(
-            ImVec2(760, 540),
-            ImGuiCond_Appearing
-        );
-
-        ImGui::SetNextWindowDockID(0, ImGuiCond_Appearing);
-
-        panel.floatOnFirstFrame = false;
-    }
-
-    switch (panel.type)
-    {
-    case PanelType::SceneEditor:
-        CNode::DrawSceneEditor(title.c_str(), &panel.open);
-        break;
-
-    case PanelType::NodeGraphEditor:
-        CNode::DrawNodeGraphEditor(title.c_str(), &panel.open);
-        break;
-
-    case PanelType::Inspector:
-        CNode::DrawInspector(title.c_str(), &panel.open);
-        break;
-    }
-}
+#include "panels/panel_manager.h"
+#include "tab/file/file_tab.h"
+#include "tab/windows/window_tab.h"
 
 int main()
 {
+    // Memeriksa apakah layout sebelumnya sudah tersimpan.
     const char* layoutFile = "imgui.ini";
     const bool hasSavedLayout = std::filesystem::exists(layoutFile);
 
+    // Inisialisasi GLFW.
     if (!glfwInit())
         return -1;
 
@@ -159,13 +42,16 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    // Inisialisasi Dear ImGui.
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
+
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.IniFilename = layoutFile;
 
+    // Memuat font Inter.
     ImFont* interFont = io.Fonts->AddFontFromFileTTF(
         R"(D:\CNode\assets\fonts\Inter.ttf)",
         16.0f
@@ -184,12 +70,14 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
-    AddPanel(PanelType::SceneEditor, false);
-    AddPanel(PanelType::NodeGraphEditor, false);
-    AddPanel(PanelType::Inspector, false);
+    // Membuat panel default.
+    CNode::AddPanel(CNode::PanelType::SceneEditor, false);
+    CNode::AddPanel(CNode::PanelType::NodeGraphEditor, false);
+    CNode::AddPanel(CNode::PanelType::Inspector, false);
 
     bool layoutInitialized = false;
 
+    // Main loop.
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -198,6 +86,7 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // Dockspace utama.
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGuiID dockspaceID = ImGui::GetID("CNodeDockspace");
 
@@ -206,6 +95,7 @@ int main()
             viewport
         );
 
+        // Membuat layout default jika belum ada layout tersimpan.
         if (!layoutInitialized && !hasSavedLayout)
         {
             ImGui::DockBuilderRemoveNode(dockspaceID);
@@ -220,6 +110,7 @@ int main()
                 viewport->Size
             );
 
+            // Membagi area kanan untuk Inspector.
             ImGuiID leftID = 0;
             ImGuiID inspectorID = 0;
 
@@ -231,6 +122,7 @@ int main()
                 &leftID
             );
 
+            // Membagi area kiri menjadi Scene Editor dan Node Graph.
             ImGuiID sceneID = 0;
             ImGuiID graphID = 0;
 
@@ -242,71 +134,45 @@ int main()
                 &sceneID
             );
 
-            for (const Panel& panel : panels)
-            {
-                std::string title = GetPanelTitle(panel);
+            // Menempatkan panel ke area masing-masing.
+            ImGui::DockBuilderDockWindow(
+                "Scene Editor 1###CNodePanel_1",
+                sceneID
+            );
 
-                switch (panel.type)
-                {
-                case PanelType::SceneEditor:
-                    ImGui::DockBuilderDockWindow(
-                        title.c_str(),
-                        sceneID
-                    );
-                    break;
+            ImGui::DockBuilderDockWindow(
+                "Node Graph Editor 1###CNodePanel_2",
+                graphID
+            );
 
-                case PanelType::NodeGraphEditor:
-                    ImGui::DockBuilderDockWindow(
-                        title.c_str(),
-                        graphID
-                    );
-                    break;
-
-                case PanelType::Inspector:
-                    ImGui::DockBuilderDockWindow(
-                        title.c_str(),
-                        inspectorID
-                    );
-                    break;
-                }
-            }
+            ImGui::DockBuilderDockWindow(
+                "Inspector 1###CNodePanel_3",
+                inspectorID
+            );
 
             ImGui::DockBuilderFinish(dockspaceID);
+
             layoutInitialized = true;
         }
         else if (hasSavedLayout)
         {
+            // ImGui akan menggunakan layout dari imgui.ini.
             layoutInitialized = true;
         }
 
+        // Menu utama.
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("File"))
-            {
-                ImGui::MenuItem("CNode Engine", nullptr, false, false);
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Window"))
-            {
-                if (ImGui::MenuItem("Scene Editor"))
-                    AddPanel(PanelType::SceneEditor);
-
-                if (ImGui::MenuItem("Node Graph Editor"))
-                    AddPanel(PanelType::NodeGraphEditor);
-
-                if (ImGui::MenuItem("Inspector"))
-                    AddPanel(PanelType::Inspector);
-
-                ImGui::EndMenu();
-            }
+            CNode::DrawFileTab();
+            CNode::DrawWindowTab();
 
             ImGui::EndMainMenuBar();
         }
 
-        for (Panel& panel : panels)
-            DrawPanel(panel);
+        // Menggambar semua panel melalui panel manager.
+        CNode::DrawAllPanels();
 
+        // Rendering.
         ImGui::Render();
 
         int displayWidth = 0;
@@ -319,7 +185,14 @@ int main()
         );
 
         glViewport(0, 0, displayWidth, displayHeight);
-        glClearColor(0.08f, 0.08f, 0.09f, 1.0f);
+
+        glClearColor(
+            0.08f,
+            0.08f,
+            0.09f,
+            1.0f
+        );
+
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_RenderDrawData(
@@ -329,6 +202,7 @@ int main()
         glfwSwapBuffers(window);
     }
 
+    // Membersihkan resource.
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

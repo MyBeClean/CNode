@@ -30,6 +30,14 @@ add_executable(CNodeEditor
     src/tab/windows/scene_editor.cpp
     src/tab/windows/node_graph_editor.cpp
     src/tab/windows/inspector.cpp
+    src/tab/windows/window_tab.cpp
+
+    src/tab/file/file_tab.cpp
+    src/tab/file/new_scene.cpp
+    src/tab/file/open_scene.cpp
+
+    src/panels/panel_manager.cpp
+
 
     "${IMGUI_DIR}/imgui.cpp"
     "${IMGUI_DIR}/imgui_draw.cpp"
