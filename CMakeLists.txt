@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.20)
 
 project(CNode LANGUAGES CXX)
@@ -21,8 +20,33 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glfw)
 
+find_package(OpenGL REQUIRED)
+
+set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
+
 add_executable(CNodeEditor
     src/main.cpp
+
+    src/tab/windows/scene_editor.cpp
+    src/tab/windows/node_graph_editor.cpp
+    src/tab/windows/inspector.cpp
+
+    "${IMGUI_DIR}/imgui.cpp"
+    "${IMGUI_DIR}/imgui_draw.cpp"
+    "${IMGUI_DIR}/imgui_tables.cpp"
+    "${IMGUI_DIR}/imgui_widgets.cpp"
+
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
 )
 
-target_link_libraries(CNodeEditor PRIVATE glfw)
+target_include_directories(CNodeEditor PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${IMGUI_DIR}"
+    "${IMGUI_DIR}/backends"
+)
+
+target_link_libraries(CNodeEditor PRIVATE
+    glfw
+    OpenGL::GL
+)
