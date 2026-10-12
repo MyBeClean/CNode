@@ -1,2 +1,13 @@
 .vs/
 **/.vs/
+build/
+out/
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
