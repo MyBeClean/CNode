@@ -6,6 +6,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+
 #include "tab/windows/scene_editor.h"
 #include "tab/windows/node_graph_editor.h"
 #include "tab/windows/inspector.h"
@@ -23,10 +24,13 @@ namespace CNode
     };
 
     static std::vector<Panel> panels;
+
     static int nextPanelId = 1;
+
     static int sceneEditorCount = 0;
     static int nodeGraphEditorCount = 0;
     static int inspectorCount = 0;
+    static int projectSettingsCount = 0;
 
     static std::string GetPanelTitle(const Panel& panel)
     {
@@ -44,6 +48,10 @@ namespace CNode
 
         case PanelType::Inspector:
             name = "Inspector";
+            break;
+
+        case PanelType::ProjectSettings:
+            name = "Project Settings";
             break;
         }
 
@@ -68,6 +76,10 @@ namespace CNode
         case PanelType::Inspector:
             instance = ++inspectorCount;
             break;
+
+        case PanelType::ProjectSettings:
+            instance = ++projectSettingsCount;
+            break;
         }
 
         panels.push_back({
@@ -89,7 +101,9 @@ namespace CNode
         if (panel.floatOnFirstFrame)
         {
             ImGuiViewport* viewport = ImGui::GetMainViewport();
-            float offset = static_cast<float>((panel.id % 6) * 28);
+
+            float offset =
+                static_cast<float>((panel.id % 6) * 28);
 
             ImGui::SetNextWindowPos(
                 ImVec2(
@@ -104,7 +118,11 @@ namespace CNode
                 ImGuiCond_Appearing
             );
 
-            ImGui::SetNextWindowDockID(0, ImGuiCond_Appearing);
+            ImGui::SetNextWindowDockID(
+                0,
+                ImGuiCond_Appearing
+            );
+
             panel.floatOnFirstFrame = false;
         }
 
@@ -121,12 +139,18 @@ namespace CNode
         case PanelType::Inspector:
             DrawInspector(title.c_str(), &panel.open);
             break;
+
+        case PanelType::ProjectSettings:
+            DrawProjectSettings(title.c_str(), &panel.open);
+            break;
         }
     }
 
     void DrawAllPanels()
     {
         for (Panel& panel : panels)
+        {
             DrawPanel(panel);
+        }
     }
 }

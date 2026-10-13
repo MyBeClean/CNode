@@ -115,6 +115,7 @@ namespace CNode
             return camera;
         }
 
+
         static ImVec2 ProjectPoint(
             Vec3 point,
             ImVec2 center,
@@ -123,21 +124,25 @@ namespace CNode
         {
             const CameraBasis camera = GetCameraBasis();
 
-            const Vec3 relative =
-                Subtract(point, camera.position);
+            const Vec3 relative = Subtract(point, camera.position);
 
             const float depth = Dot(relative, camera.forward);
             const float cameraX = Dot(relative, camera.right);
             const float cameraY = Dot(relative, camera.up);
 
             const float focal = std::min(width, height) * 0.9f;
-            const float safeDepth = std::max(depth, 0.1f);
+            constexpr float nearPlane = 0.1f;
 
-            return {
-                center.x + cameraX * focal / safeDepth,
-                center.y - cameraY * focal / safeDepth
-            };
+            // Hindari memproyeksikan titik yang berada di belakang kamera.
+            if (depth <= nearPlane)
+                return ImVec2(-100000.0f, -100000.0f);
+
+            return ImVec2(
+                center.x + cameraX * focal / depth,
+                center.y - cameraY * focal / depth
+            );
         }
+
 
         static void DrawLine3D(
             ImDrawList* drawList,
@@ -149,13 +154,62 @@ namespace CNode
             ImU32 color,
             float thickness = 1.0f)
         {
-            drawList->AddLine(
-                ProjectPoint(a, center, width, height),
-                ProjectPoint(b, center, width, height),
-                color,
-                thickness
+            const CameraBasis camera = GetCameraBasis();
+
+            const float focal = std::min(width, height) * 0.9f;
+            constexpr float nearPlane = 0.1f;
+
+            // Ubah titik dunia menjadi koordinat kamera.
+            auto ToCameraSpace = [&](Vec3 point) -> Vec3
+                {
+                    const Vec3 relative = Subtract(point, camera.position);
+
+                    return {
+                        Dot(relative, camera.right),
+                        Dot(relative, camera.up),
+                        Dot(relative, camera.forward)
+                    };
+                };
+
+            Vec3 p1 = ToCameraSpace(a);
+            Vec3 p2 = ToCameraSpace(b);
+
+            // Kedua titik berada di belakang atau tepat pada bidang dekat.
+            if (p1.z <= nearPlane && p2.z <= nearPlane)
+                return;
+
+            // Potong garis jika hanya salah satu titik berada di belakang kamera.
+            if (p1.z <= nearPlane || p2.z <= nearPlane)
+            {
+                Vec3& behind = (p1.z <= nearPlane) ? p1 : p2;
+                const Vec3& front = (p1.z <= nearPlane) ? p2 : p1;
+
+                const float denominator = front.z - behind.z;
+
+                if (denominator <= 0.00001f)
+                    return;
+
+                const float t = (nearPlane - behind.z) / denominator;
+
+                behind.x += (front.x - behind.x) * t;
+                behind.y += (front.y - behind.y) * t;
+                behind.z = nearPlane;
+            }
+
+            // Proyeksikan koordinat kamera ke layar.
+            const ImVec2 screenA(
+                center.x + p1.x * focal / p1.z,
+                center.y - p1.y * focal / p1.z
             );
+
+            const ImVec2 screenB(
+                center.x + p2.x * focal / p2.z,
+                center.y - p2.y * focal / p2.z
+            );
+
+            drawList->AddLine(screenA, screenB, color, thickness);
         }
+
 
         static void DrawGrid(
             ImDrawList* drawList,

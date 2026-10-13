@@ -11,6 +11,10 @@ namespace CNode
         ProjectSettings
     };
 
-    void AddPanel(PanelType type, bool floating = true);
+    void AddPanel(
+        PanelType type,
+        bool floating = true
+    );
+
     void DrawAllPanels();
 }

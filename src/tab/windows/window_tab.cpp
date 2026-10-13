@@ -1,7 +1,8 @@
 
 #include "window_tab.h"
-#include "imgui.h"
 #include "panels/panel_manager.h"
+
+#include "imgui.h"
 
 namespace CNode
 {
@@ -17,6 +18,9 @@ namespace CNode
 
             if (ImGui::MenuItem("Inspector"))
                 AddPanel(PanelType::Inspector);
+
+            if (ImGui::MenuItem("Project Settings"))
+                AddPanel(PanelType::ProjectSettings);
 
             ImGui::EndMenu();
         }
