@@ -27,9 +27,9 @@ set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
 add_executable(CNodeEditor
     src/main.cpp
 
-    src/tab/windows/scene_editor.cpp
-    src/tab/windows/node_graph_editor.cpp
-    src/tab/windows/inspector.cpp
+    src/tab/windows/scene_editor/scene_editor.cpp
+    src/tab/windows/node_graph/node_graph_editor.cpp
+    src/tab/windows/inspector/inspector.cpp
     src/tab/windows/window_tab.cpp
 
     src/tab/file/file_tab.cpp
@@ -48,7 +48,7 @@ add_executable(CNodeEditor
 
     "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
     "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
- "src/environment/environment_settings.h" "src/environment/environment_settings.cpp" "src/tab/windows/project_setting.h" "src/tab/windows/project_setting.cpp")
+ "src/environment/environment_settings.h" "src/environment/environment_settings.cpp" "src/tab/windows/project_setting/project_setting.h" "src/tab/windows/project_setting/project_setting.cpp")
 
 target_include_directories(CNodeEditor PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"

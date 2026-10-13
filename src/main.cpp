@@ -13,6 +13,7 @@
 #include "panels/panel_manager.h"
 #include "tab/file/file_tab.h"
 #include "tab/windows/window_tab.h"
+#include "tab/windows/scene_editor/scene_editor.h"
 
 int main()
 {

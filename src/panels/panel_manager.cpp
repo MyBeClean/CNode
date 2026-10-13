@@ -7,10 +7,10 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#include "tab/windows/scene_editor.h"
-#include "tab/windows/node_graph_editor.h"
-#include "tab/windows/inspector.h"
-#include "tab/windows/project_setting.h"
+#include "tab/windows/scene_editor/scene_editor.h"
+#include "tab/windows/node_graph/node_graph_editor.h"
+#include "tab/windows/inspector/inspector.h"
+#include "tab/windows/project_setting/project_setting.h"
 
 namespace CNode
 {
