@@ -7,10 +7,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-inline bool setAppIcon(GLFWwindow* window)
+inline bool setAppIcon(GLFWwindow* window, const char* path)
 {
-    const char* path = R"(D:\CNode\assets\img\Logo.png)";
-
     int width = 0;
     int height = 0;
     int channels = 0;

@@ -1,5 +1,6 @@
 
 #include <filesystem>
+#include <string>
 
 #include <GLFW/glfw3.h>
 
@@ -15,11 +16,33 @@
 
 int main()
 {
-    // Memeriksa apakah layout sebelumnya sudah tersimpan.
-    const char* layoutFile = "imgui.ini";
-    const bool hasSavedLayout = std::filesystem::exists(layoutFile);
+    namespace fs = std::filesystem;
 
-    // Inisialisasi GLFW.
+    fs::path projectRoot = fs::current_path();
+
+    while (!fs::exists(projectRoot / "CMakeLists.txt"))
+    {
+        const fs::path parent = projectRoot.parent_path();
+
+        if (parent == projectRoot || parent.empty())
+        {
+            return -1;
+        }
+
+        projectRoot = parent;
+    }
+
+    const fs::path assetsPath = projectRoot / "assets";
+    const fs::path fontPath = assetsPath / "fonts" / "Inter.ttf";
+    const fs::path iconPath = assetsPath / "img" / "Logo.png";
+    const fs::path layoutPath = projectRoot / "imgui.ini";
+
+    const bool hasSavedLayout = fs::exists(layoutPath);
+
+    const std::string fontFile = fontPath.string();
+    const std::string iconFile = iconPath.string();
+    const std::string layoutFile = layoutPath.string();
+
     if (!glfwInit())
         return -1;
 
@@ -37,23 +60,21 @@ int main()
         return -1;
     }
 
-    setAppIcon(window);
+    setAppIcon(window, iconFile.c_str());
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-    // Inisialisasi Dear ImGui.
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
 
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.IniFilename = layoutFile;
+    io.IniFilename = layoutFile.c_str();
 
-    // Memuat font Inter.
     ImFont* interFont = io.Fonts->AddFontFromFileTTF(
-        R"(D:\CNode\assets\fonts\Inter.ttf)",
+        fontFile.c_str(),
         16.0f
     );
 
@@ -70,14 +91,23 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
-    // Membuat panel default.
-    CNode::AddPanel(CNode::PanelType::SceneEditor, false);
-    CNode::AddPanel(CNode::PanelType::NodeGraphEditor, false);
-    CNode::AddPanel(CNode::PanelType::Inspector, false);
+    CNode::AddPanel(
+        CNode::PanelType::SceneEditor,
+        false
+    );
+
+    CNode::AddPanel(
+        CNode::PanelType::NodeGraphEditor,
+        false
+    );
+
+    CNode::AddPanel(
+        CNode::PanelType::Inspector,
+        false
+    );
 
     bool layoutInitialized = false;
 
-    // Main loop.
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -86,8 +116,8 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Dockspace utama.
         ImGuiViewport* viewport = ImGui::GetMainViewport();
+
         ImGuiID dockspaceID = ImGui::GetID("CNodeDockspace");
 
         ImGui::DockSpaceOverViewport(
@@ -95,7 +125,6 @@ int main()
             viewport
         );
 
-        // Membuat layout default jika belum ada layout tersimpan.
         if (!layoutInitialized && !hasSavedLayout)
         {
             ImGui::DockBuilderRemoveNode(dockspaceID);
@@ -110,7 +139,6 @@ int main()
                 viewport->Size
             );
 
-            // Membagi area kanan untuk Inspector.
             ImGuiID leftID = 0;
             ImGuiID inspectorID = 0;
 
@@ -122,7 +150,6 @@ int main()
                 &leftID
             );
 
-            // Membagi area kiri menjadi Scene Editor dan Node Graph.
             ImGuiID sceneID = 0;
             ImGuiID graphID = 0;
 
@@ -134,7 +161,6 @@ int main()
                 &sceneID
             );
 
-            // Menempatkan panel ke area masing-masing.
             ImGui::DockBuilderDockWindow(
                 "Scene Editor 1###CNodePanel_1",
                 sceneID
@@ -156,11 +182,9 @@ int main()
         }
         else if (hasSavedLayout)
         {
-            // ImGui akan menggunakan layout dari imgui.ini.
             layoutInitialized = true;
         }
 
-        // Menu utama.
         if (ImGui::BeginMainMenuBar())
         {
             CNode::DrawFileTab();
@@ -169,10 +193,8 @@ int main()
             ImGui::EndMainMenuBar();
         }
 
-        // Menggambar semua panel melalui panel manager.
         CNode::DrawAllPanels();
 
-        // Rendering.
         ImGui::Render();
 
         int displayWidth = 0;
@@ -184,7 +206,12 @@ int main()
             &displayHeight
         );
 
-        glViewport(0, 0, displayWidth, displayHeight);
+        glViewport(
+            0,
+            0,
+            displayWidth,
+            displayHeight
+        );
 
         glClearColor(
             0.08f,
@@ -202,9 +229,9 @@ int main()
         glfwSwapBuffers(window);
     }
 
-    // Membersihkan resource.
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+
     ImGui::DestroyContext();
 
     glfwDestroyWindow(window);
