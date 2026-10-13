@@ -9,6 +9,7 @@
 #include "tab/windows/scene_editor.h"
 #include "tab/windows/node_graph_editor.h"
 #include "tab/windows/inspector.h"
+#include "tab/windows/project_setting.h"
 
 namespace CNode
 {

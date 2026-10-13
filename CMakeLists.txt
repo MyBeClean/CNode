@@ -38,6 +38,8 @@ add_executable(CNodeEditor
 
     src/panels/panel_manager.cpp
 
+    src/environment/environment_settings.cpp
+
 
     "${IMGUI_DIR}/imgui.cpp"
     "${IMGUI_DIR}/imgui_draw.cpp"
@@ -46,7 +48,7 @@ add_executable(CNodeEditor
 
     "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
     "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
-)
+ "src/environment/environment_settings.h" "src/environment/environment_settings.cpp" "src/tab/windows/project_setting.h" "src/tab/windows/project_setting.cpp")
 
 target_include_directories(CNodeEditor PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"

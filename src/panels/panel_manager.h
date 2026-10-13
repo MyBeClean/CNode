@@ -7,7 +7,8 @@ namespace CNode
     {
         SceneEditor,
         NodeGraphEditor,
-        Inspector
+        Inspector,
+        ProjectSettings
     };
 
     void AddPanel(PanelType type, bool floating = true);
