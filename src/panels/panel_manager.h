@@ -8,7 +8,8 @@ namespace CNode
         SceneEditor,
         NodeGraphEditor,
         Inspector,
-        ProjectSettings
+        ProjectSettings,
+        ObjectList
     };
 
     void AddPanel(

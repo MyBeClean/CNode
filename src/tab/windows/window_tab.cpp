@@ -22,6 +22,11 @@ namespace CNode
             if (ImGui::MenuItem("Project Settings"))
                 AddPanel(PanelType::ProjectSettings);
 
+            if (ImGui::MenuItem("Object List"))
+            {
+                CNode::AddPanel(CNode::PanelType::ObjectList);
+            }
+
             ImGui::EndMenu();
         }
     }

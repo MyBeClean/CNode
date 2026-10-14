@@ -11,6 +11,7 @@
 #include "tab/windows/node_graph/node_graph_editor.h"
 #include "tab/windows/inspector/inspector.h"
 #include "tab/windows/project_setting/project_setting.h"
+#include "tab/windows/object_list/object_list.h"
 
 namespace CNode
 {
@@ -31,6 +32,7 @@ namespace CNode
     static int nodeGraphEditorCount = 0;
     static int inspectorCount = 0;
     static int projectSettingsCount = 0;
+    static int objectListCount = 0;
 
     static std::string GetPanelTitle(const Panel& panel)
     {
@@ -52,6 +54,10 @@ namespace CNode
 
         case PanelType::ProjectSettings:
             name = "Project Settings";
+            break;
+
+        case PanelType::ObjectList:
+            name = "Object List";
             break;
         }
 
@@ -80,6 +86,10 @@ namespace CNode
         case PanelType::ProjectSettings:
             instance = ++projectSettingsCount;
             break;
+
+        case PanelType::ObjectList:
+            instance = ++objectListCount;
+            break;
         }
 
         panels.push_back({
@@ -96,25 +106,25 @@ namespace CNode
         if (!panel.open)
             return;
 
-        std::string title = GetPanelTitle(panel);
+        const std::string title = GetPanelTitle(panel);
 
         if (panel.floatOnFirstFrame)
         {
             ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-            float offset =
+            const float offset =
                 static_cast<float>((panel.id % 6) * 28);
 
             ImGui::SetNextWindowPos(
                 ImVec2(
-                    viewport->WorkPos.x + 80 + offset,
-                    viewport->WorkPos.y + 60 + offset
+                    viewport->WorkPos.x + 80.0f + offset,
+                    viewport->WorkPos.y + 60.0f + offset
                 ),
                 ImGuiCond_Appearing
             );
 
             ImGui::SetNextWindowSize(
-                ImVec2(760, 540),
+                ImVec2(760.0f, 540.0f),
                 ImGuiCond_Appearing
             );
 
@@ -142,6 +152,10 @@ namespace CNode
 
         case PanelType::ProjectSettings:
             DrawProjectSettings(title.c_str(), &panel.open);
+            break;
+
+        case PanelType::ObjectList:
+            DrawObjectList(title.c_str(), &panel.open);
             break;
         }
     }

@@ -1,8 +1,11 @@
 #include "scene_editor.h"
-#include "environment/environment_settings.h"
+#include "tab/windows/project_setting/environment/environment_settings.h"
 #include "scene_camera.h"
 #include "scene_grid.h"
 #include "scene_gizmo.h"
+#include "scene_viewport_renderer.h"
+
+#include <cstdint>
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -133,6 +136,11 @@ namespace CNode
         }
     }
 
+    SceneEditor::Camera& GetSceneCamera()
+    {
+        return camera;
+    }
+
     void DrawSceneEditor(const char* title, bool* open)
     {
         if (open != nullptr && !*open)
@@ -192,13 +200,11 @@ namespace CNode
 
         const ImVec2 mouse = io.MousePos;
 
-        // View gizmo position.
         const ImVec2 gizmoCenter(
             end.x - 65.0f,
             start.y + 65.0f
         );
 
-        // Approximate hit-test for the view gizmo.
         const float gizmoHitRadius = 64.0f;
 
         const float gx = mouse.x - gizmoCenter.x;
@@ -208,22 +214,12 @@ namespace CNode
             gx * gx + gy * gy <=
             gizmoHitRadius * gizmoHitRadius;
 
-        // -------------------------------------------------
-        // MOUSE CAPTURE
-        // -------------------------------------------------
-
-        // Start gizmo dragging only when the left click
-        // begins inside the gizmo hit area.
         if (hovered &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
             gizmoDragging = overGizmo;
         }
 
-        // Right mouse button: camera navigation.
-        // Middle mouse button: orbit/pan navigation.
-        // Left mouse button: capture only when dragging
-        // the gizmo, not when selecting empty space.
         const bool wantsCameraCapture =
             hovered &&
             (
@@ -256,10 +252,6 @@ namespace CNode
             SetCursorLocked(false);
         }
 
-        // -------------------------------------------------
-        // INPUT STATE
-        // -------------------------------------------------
-
         const bool rightDown =
             mouseCaptureActive &&
             ImGui::IsMouseDown(ImGuiMouseButton_Right);
@@ -273,12 +265,6 @@ namespace CNode
 
         const bool fpsNavigation = rightDown && !overGizmo;
 
-        // -------------------------------------------------
-        // SELECTION AND ZOOM
-        // -------------------------------------------------
-
-        // Left-click on empty space starts box selection.
-        // It does not capture or hide the cursor.
         if (!mouseCaptureActive &&
             hovered &&
             !overGizmo)
@@ -296,24 +282,16 @@ namespace CNode
             }
         }
 
-        // Update selection independently of mouse capture.
-        // This is important because selection keeps the
-        // cursor visible.
         if (selecting && leftDown)
         {
             selectionEnd = mouse;
         }
 
-        // Stop selection when the left button is released.
         if (selecting &&
             ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
             selecting = false;
         }
-
-        // -------------------------------------------------
-        // CAMERA ORBIT / PAN
-        // -------------------------------------------------
 
         if (middleDown && !fpsNavigation)
         {
@@ -328,10 +306,6 @@ namespace CNode
                 camera.Orbit(delta.x, delta.y);
             }
         }
-
-        // -------------------------------------------------
-        // FPS CAMERA NAVIGATION
-        // -------------------------------------------------
 
         if (fpsNavigation)
         {
@@ -376,9 +350,39 @@ namespace CNode
             }
         }
 
-        // -------------------------------------------------
-        // SCENE GRID
-        // -------------------------------------------------
+
+        // Render the 3D scene into an offscreen framebuffer.
+        const int renderWidth = std::max(
+            1,
+            static_cast<int>(available.x)
+        );
+
+        const int renderHeight = std::max(
+            1,
+            static_cast<int>(available.y)
+        );
+
+        const GLuint sceneTexture =
+            SceneViewportRenderer::Get().Render(
+                camera,
+                renderWidth,
+                renderHeight,
+                env.backgroundColor
+            );
+
+        // Display the framebuffer texture behind the grid
+        // and the existing editor overlays.
+        if (sceneTexture != 0)
+        {
+            drawList->AddImage(
+                (ImTextureID)(intptr_t)sceneTexture,
+                start,
+                end,
+                ImVec2(0.0f, 1.0f),
+                ImVec2(1.0f, 0.0f)
+            );
+        }
+
 
         const ImVec2 sceneCenter(
             start.x + available.x * 0.5f,
@@ -398,7 +402,6 @@ namespace CNode
         }
         else if (env.showAxes)
         {
-            // X axis: red.
             DrawLine3D(
                 drawList,
                 { -100.0f, 0.0f, 0.0f },
@@ -411,7 +414,6 @@ namespace CNode
                 2.0f
             );
 
-            // Y axis: green.
             DrawLine3D(
                 drawList,
                 { 0.0f, -100.0f, 0.0f },
@@ -424,7 +426,6 @@ namespace CNode
                 2.0f
             );
 
-            // Z axis: blue.
             DrawLine3D(
                 drawList,
                 { 0.0f, 0.0f, -100.0f },
@@ -438,20 +439,12 @@ namespace CNode
             );
         }
 
-        // -------------------------------------------------
-        // VIEW GIZMO
-        // -------------------------------------------------
-
         DrawViewGizmo(
             drawList,
             gizmoCenter,
             camera,
             hovered && overGizmo
         );
-
-        // -------------------------------------------------
-        // VIEWPORT LABELS
-        // -------------------------------------------------
 
         drawList->AddText(
             ImVec2(start.x + 12.0f, start.y + 10.0f),
@@ -467,10 +460,6 @@ namespace CNode
                 "RMB: Look | WASD: Move | Q/E: Down/Up | Shift: Faster"
             );
         }
-
-        // -------------------------------------------------
-        // BOX SELECTION VISUAL
-        // -------------------------------------------------
 
         if (selecting)
         {
