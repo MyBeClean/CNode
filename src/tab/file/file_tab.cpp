@@ -128,6 +128,25 @@ namespace CNode
             return stream.str();
         }
 
+
+        void UpdateDirtyState()
+        {
+            if (!g_sceneOpen)
+            {
+                g_sceneDirty = false;
+                return;
+            }
+
+            // Bandingkan kondisi scene saat ini dengan
+            // kondisi terakhir yang disimpan.
+            const std::string currentSignature =
+                BuildObjectSignature();
+
+            g_sceneDirty =
+                currentSignature != g_savedSignature;
+        }
+
+
         bool ChooseSceneFile(fs::path& selectedPath)
         {
             HRESULT initResult = CoInitializeEx(
