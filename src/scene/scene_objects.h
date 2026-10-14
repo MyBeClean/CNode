@@ -29,16 +29,17 @@ namespace CNode
         bool RemoveObject(std::uint64_t id);
 
         SceneObjectEntry* FindObject(std::uint64_t id);
-
-        const SceneObjectEntry* FindObject(
-            std::uint64_t id
-        ) const;
+        const SceneObjectEntry* FindObject(std::uint64_t id) const;
 
         std::vector<SceneObjectEntry>& GetAll();
-
         const std::vector<SceneObjectEntry>& GetAll() const;
 
         void Clear();
+
+        // Mengganti seluruh objek dengan data hasil pemuatan scene.
+        void ReplaceAll(
+            const std::vector<SceneObjectEntry>& loadedObjects
+        );
 
     private:
         SceneObjects() = default;

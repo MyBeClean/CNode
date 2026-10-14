@@ -1,6 +1,7 @@
 #include "scene_objects.h"
 
 #include <algorithm>
+#include <limits>
 
 namespace CNode
 {
@@ -15,13 +16,11 @@ namespace CNode
     )
     {
         SceneObjectEntry entry;
-
         entry.id = nextObjectID++;
         entry.type = SceneObjectType::Cube;
         entry.cube = cube;
 
         objects.push_back(entry);
-
         return objects.back();
     }
 
@@ -43,9 +42,7 @@ namespace CNode
         return true;
     }
 
-    SceneObjectEntry* SceneObjects::FindObject(
-        std::uint64_t id
-    )
+    SceneObjectEntry* SceneObjects::FindObject(std::uint64_t id)
     {
         for (auto& object : objects)
         {
@@ -83,5 +80,27 @@ namespace CNode
     {
         objects.clear();
         nextObjectID = 1;
+    }
+
+    void SceneObjects::ReplaceAll(
+        const std::vector<SceneObjectEntry>& loadedObjects
+    )
+    {
+        objects = loadedObjects;
+
+        std::uint64_t maxID = 0;
+
+        for (const auto& object : objects)
+        {
+            maxID = std::max(maxID, object.id);
+        }
+
+        if (maxID == std::numeric_limits<std::uint64_t>::max())
+            nextObjectID = maxID;
+        else
+            nextObjectID = maxID + 1;
+
+        if (nextObjectID == 0)
+            nextObjectID = 1;
     }
 }

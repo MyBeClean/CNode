@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <glad/glad.h>
@@ -26,7 +27,6 @@ namespace CNode
 
     private:
         CubeRenderer() = default;
-
         ~CubeRenderer() = default;
 
         CubeRenderer(const CubeRenderer&) = delete;

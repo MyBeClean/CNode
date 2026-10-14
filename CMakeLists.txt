@@ -66,9 +66,7 @@ add_executable(CNodeEditor
 
     # Tabs
     src/tab/file/file_tab.cpp
-    src/tab/file/new_scene.cpp
-    src/tab/file/open_scene.cpp
-
+  
     src/tab/windows/window_tab.cpp
     src/tab/windows/node_graph/node_graph_editor.cpp
     src/tab/windows/inspector/inspector.cpp
@@ -84,9 +82,6 @@ add_executable(CNodeEditor
 
     # Cube
     src/node/3d_object/cube/cube.cpp
-    src/node/3d_object/cube/cube_render.cpp
-    src/node/3d_object/cube/cube_mapping.cpp
-    src/node/3d_object/cube/cube_spawn.cpp
 
     # Scene objects
     src/scene/scene_objects.cpp
@@ -95,6 +90,8 @@ add_executable(CNodeEditor
     src/class/register_classes.cpp
     src/class/transform/transform.cpp
     src/class/visual/visual.cpp
+
+    src/menu/menu.cpp
 
     # GLAD
     "${GLAD_DIR}/src/glad.c"

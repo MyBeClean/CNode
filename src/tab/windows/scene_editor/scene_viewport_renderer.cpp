@@ -6,7 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "node/3d_object/cube/cube.h"
 #include "node/3d_object/cube/cube_render.h"
+#include "scene/scene_objects.h"
 
 namespace CNode
 {
@@ -31,9 +33,12 @@ namespace CNode
             depthBuffer != 0;
 
         if (!initialized)
+        {
             Shutdown();
+            return false;
+        }
 
-        return initialized;
+        return true;
     }
 
     bool SceneViewportRenderer::Resize(int width, int height)
@@ -49,13 +54,18 @@ namespace CNode
         GLint previousRenderbuffer = 0;
 
         glGetIntegerv(
-            GL_FRAMEBUFFER_BINDING, &previousFramebuffer
+            GL_FRAMEBUFFER_BINDING,
+            &previousFramebuffer
         );
+
         glGetIntegerv(
-            GL_TEXTURE_BINDING_2D, &previousTexture
+            GL_TEXTURE_BINDING_2D,
+            &previousTexture
         );
+
         glGetIntegerv(
-            GL_RENDERBUFFER_BINDING, &previousRenderbuffer
+            GL_RENDERBUFFER_BINDING,
+            &previousRenderbuffer
         );
 
         glBindTexture(GL_TEXTURE_2D, colorTexture);
@@ -73,16 +83,27 @@ namespace CNode
         );
 
         glTexParameteri(
-            GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
+            GL_LINEAR
         );
+
         glTexParameteri(
-            GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MAG_FILTER,
+            GL_LINEAR
         );
+
         glTexParameteri(
-            GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_S,
+            GL_CLAMP_TO_EDGE
         );
+
         glTexParameteri(
-            GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_T,
+            GL_CLAMP_TO_EDGE
         );
 
         glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
@@ -119,10 +140,12 @@ namespace CNode
             GL_FRAMEBUFFER,
             static_cast<GLuint>(previousFramebuffer)
         );
+
         glBindTexture(
             GL_TEXTURE_2D,
             static_cast<GLuint>(previousTexture)
         );
+
         glBindRenderbuffer(
             GL_RENDERBUFFER,
             static_cast<GLuint>(previousRenderbuffer)
@@ -152,14 +175,22 @@ namespace CNode
 
         GLint previousFramebuffer = 0;
         GLint previousViewport[4] = {};
-        const GLboolean depthWasEnabled = glIsEnabled(GL_DEPTH_TEST);
+
+        const GLboolean depthWasEnabled =
+            glIsEnabled(GL_DEPTH_TEST);
 
         glGetIntegerv(
-            GL_FRAMEBUFFER_BINDING, &previousFramebuffer
+            GL_FRAMEBUFFER_BINDING,
+            &previousFramebuffer
         );
-        glGetIntegerv(GL_VIEWPORT, previousViewport);
+
+        glGetIntegerv(
+            GL_VIEWPORT,
+            previousViewport
+        );
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
         glViewport(0, 0, width, height);
 
         glEnable(GL_DEPTH_TEST);
@@ -178,10 +209,15 @@ namespace CNode
             GL_STENCIL_BUFFER_BIT
         );
 
+        // Camera view.
         const SceneEditor::CameraBasis basis = camera.Basis();
         const SceneEditor::Vec3 eye = camera.Position();
 
-        const glm::vec3 position(eye.x, eye.y, eye.z);
+        const glm::vec3 position(
+            eye.x,
+            eye.y,
+            eye.z
+        );
 
         const glm::vec3 forward(
             basis.forward.x,
@@ -201,6 +237,7 @@ namespace CNode
             up
         );
 
+        // Camera projection.
         const float aspect =
             static_cast<float>(width) /
             static_cast<float>(height);
@@ -212,11 +249,29 @@ namespace CNode
             1000.0f
         );
 
-        const glm::mat4 viewProjection = projection * view;
-        const glm::mat4 model(1.0f);
+        const glm::mat4 viewProjection =
+            projection * view;
 
-        CubeRenderer::Get().Draw(model, viewProjection);
+        // Render only objects registered in the scene.
+        // No default Cube is drawn at the origin.
+        if (CubeRenderer::Get().IsInitialized())
+        {
+            const auto& objects =
+                SceneObjects::Get().GetAll();
 
+            for (const auto& object : objects)
+            {
+                if (object.type != SceneObjectType::Cube)
+                    continue;
+
+                DrawCubeObject(
+                    object.cube,
+                    viewProjection
+                );
+            }
+        }
+
+        // Restore OpenGL state.
         glBindFramebuffer(
             GL_FRAMEBUFFER,
             static_cast<GLuint>(previousFramebuffer)
@@ -237,14 +292,20 @@ namespace CNode
 
     void SceneViewportRenderer::Shutdown()
     {
-        if (depthBuffer)
+        if (depthBuffer != 0)
+        {
             glDeleteRenderbuffers(1, &depthBuffer);
+        }
 
-        if (colorTexture)
+        if (colorTexture != 0)
+        {
             glDeleteTextures(1, &colorTexture);
+        }
 
-        if (framebuffer)
+        if (framebuffer != 0)
+        {
             glDeleteFramebuffers(1, &framebuffer);
+        }
 
         framebuffer = 0;
         colorTexture = 0;

@@ -1,8 +1,9 @@
+
 #pragma once
 
-#include "tab/windows/node_graph/node_graph_data.h"
-
 #include <glm/glm.hpp>
+
+#include "tab/windows/node_graph/node_graph_data.h"
 
 namespace CNode
 {
@@ -15,18 +16,18 @@ namespace CNode
         bool visible = true;
     };
 
-    // Membuat data objek Cube.
+    // Membuat data Cube. Tidak otomatis memasukkannya ke scene.
     CubeObject CreateCubeObject(
         const glm::vec3& position
     );
 
-    // Menggambar Cube menggunakan kamera Scene View.
+    // Menggambar Cube menggunakan matriks ViewProjection.
     void DrawCubeObject(
         const CubeObject& cube,
         const glm::mat4& viewProjection
     );
 
-    // Membuat node Cube di dalam Node Graph.
+    // Menambahkan node Cube beserta class default ke Node Graph.
     NodeID AddCubeNode(
         NodeGraph& graph,
         float x = 0.0f,
