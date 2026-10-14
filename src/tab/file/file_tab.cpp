@@ -2,6 +2,7 @@
 #include "menu/menu.h"
 #include "scene/scene_objects.h"
 #include "tab/windows/node_graph/node_graph_editor.h"
+#include "tab/windows/node_graph/graph_serialization.h"
 
 #include <Windows.h>
 #include <shobjidl.h>
@@ -79,7 +80,9 @@ namespace CNode
 
         void ShowError(const char* message)
         {
-            g_errorMessage = message ? message : "Unknown scene error.";
+            g_errorMessage =
+                message ? message : "Unknown scene error.";
+
             g_showErrorDialog = true;
         }
 
@@ -118,15 +121,11 @@ namespace CNode
                     << '\n';
             }
 
+            // Node Graph juga dihitung saat mendeteksi perubahan.
+            stream << "\n[GraphSignature]\n";
+            stream << SerializeNodeGraph(GetActiveNodeGraph());
+
             return stream.str();
-        }
-
-        void UpdateDirtyState()
-        {
-            if (!g_sceneOpen)
-                return;
-
-            g_sceneDirty = BuildObjectSignature() != g_savedSignature;
         }
 
         bool ChooseSceneFile(fs::path& selectedPath)
@@ -135,7 +134,8 @@ namespace CNode
                 nullptr,
                 COINIT_APARTMENTTHREADED);
 
-            const bool shouldUninitialize = SUCCEEDED(initResult);
+            const bool shouldUninitialize =
+                SUCCEEDED(initResult);
 
             if (FAILED(initResult) &&
                 initResult != RPC_E_CHANGED_MODE)
@@ -204,8 +204,10 @@ namespace CNode
             {
                 PWSTR path = nullptr;
 
-                if (SUCCEEDED(item->GetDisplayName(
-                    SIGDN_FILESYSPATH, &path)) &&
+                if (SUCCEEDED(
+                    item->GetDisplayName(
+                        SIGDN_FILESYSPATH,
+                        &path)) &&
                     path != nullptr)
                 {
                     selectedPath = fs::path(path);
@@ -265,7 +267,9 @@ namespace CNode
             if (!file.is_open())
             {
                 ShowError(
-                    "Cannot write scene file:\n" + path.string());
+                    "Cannot write scene file:\n" +
+                    path.string());
+
                 return false;
             }
 
@@ -316,11 +320,21 @@ namespace CNode
                     << (object.cube.visible ? 1 : 0) << '\n';
             }
 
-            file.flush();
+            // Simpan data Node Graph setelah data objek.
+            file << "\n[NodeGraph]\n";
+            file << SerializeNodeGraph(GetActiveNodeGraph());
 
             if (!file.good())
             {
                 ShowError("Failed to write scene file.");
+                return false;
+            }
+
+            file.flush();
+
+            if (!file.good())
+            {
+                ShowError("Failed to finish writing scene file.");
                 return false;
             }
 
@@ -354,7 +368,9 @@ namespace CNode
             if (!std::isfinite(x) ||
                 !std::isfinite(y) ||
                 !std::isfinite(z))
+            {
                 return false;
+            }
 
             result = glm::vec3(x, y, z);
             return true;
@@ -363,14 +379,17 @@ namespace CNode
         bool ReadSceneFile(
             const fs::path& path,
             std::string& sceneName,
-            std::vector<SceneObjectEntry>& loadedObjects)
+            std::vector<SceneObjectEntry>& loadedObjects,
+            NodeGraph& loadedGraph)
         {
             std::ifstream file(path);
 
             if (!file.is_open())
             {
                 ShowError(
-                    "Cannot open scene file:\n" + path.string());
+                    "Cannot open scene file:\n" +
+                    path.string());
+
                 return false;
             }
 
@@ -379,11 +398,15 @@ namespace CNode
 
             bool validHeader = false;
             bool inObject = false;
+            bool inGraph = false;
+
             bool objectHasID = false;
             bool objectHasType = false;
 
             SceneObjectEntry currentObject;
+
             std::vector<SceneObjectEntry> parsedObjects;
+            std::ostringstream graphStream;
 
             auto finishObject = [&]() -> bool
                 {
@@ -419,12 +442,36 @@ namespace CNode
                     if (line.empty() || line[0] == '#')
                         continue;
 
+                    if (line == "[NodeGraph]")
+                    {
+                        if (!finishObject())
+                        {
+                            ShowError(
+                                "Invalid object data in scene file.");
+
+                            return false;
+                        }
+
+                        inGraph = true;
+                        inObject = false;
+                        continue;
+                    }
+
+                    // Semua baris setelah [NodeGraph] menjadi
+                    // payload graph, bukan properti objek 3D.
+                    if (inGraph)
+                    {
+                        graphStream << line << '\n';
+                        continue;
+                    }
+
                     if (line == "[Object]")
                     {
                         if (!finishObject())
                         {
                             ShowError(
                                 "Invalid object data in scene file.");
+
                             return false;
                         }
 
@@ -466,6 +513,7 @@ namespace CNode
                         {
                             ShowError(
                                 "Invalid object ID in scene file.");
+
                             return false;
                         }
 
@@ -480,6 +528,7 @@ namespace CNode
                         {
                             ShowError(
                                 "Unsupported object type: " + value);
+
                             return false;
                         }
 
@@ -489,7 +538,8 @@ namespace CNode
                     else if (key == "position")
                     {
                         if (!ParseVec3(
-                            value, currentObject.cube.position))
+                            value,
+                            currentObject.cube.position))
                         {
                             ShowError("Invalid Cube position.");
                             return false;
@@ -498,7 +548,8 @@ namespace CNode
                     else if (key == "rotation")
                     {
                         if (!ParseVec3(
-                            value, currentObject.cube.rotation))
+                            value,
+                            currentObject.cube.rotation))
                         {
                             ShowError("Invalid Cube rotation.");
                             return false;
@@ -507,7 +558,8 @@ namespace CNode
                     else if (key == "scale")
                     {
                         if (!ParseVec3(
-                            value, currentObject.cube.scale))
+                            value,
+                            currentObject.cube.scale))
                         {
                             ShowError("Invalid Cube scale.");
                             return false;
@@ -535,6 +587,7 @@ namespace CNode
             {
                 ShowError(
                     "Could not parse scene file. Check its object data.");
+
                 return false;
             }
 
@@ -556,8 +609,25 @@ namespace CNode
                 }
             }
 
+            // File lama tanpa [NodeGraph] tetap bisa dibuka.
+            NodeGraph parsedGraph;
+
+            const std::string graphData = graphStream.str();
+
+            if (!graphData.empty())
+            {
+                if (!DeserializeNodeGraph(graphData, parsedGraph))
+                {
+                    ShowError(
+                        "Could not parse Node Graph data in scene file.");
+
+                    return false;
+                }
+            }
+
             sceneName = loadedName;
             loadedObjects = std::move(parsedObjects);
+            loadedGraph = std::move(parsedGraph);
 
             return true;
         }
@@ -605,12 +675,9 @@ namespace CNode
             const SceneDocument& document =
                 g_documents[index];
 
-            SceneObjects::Get().ReplaceAll(
-                document.objects
-            );
+            SceneObjects::Get().ReplaceAll(document.objects);
 
             ResetNodeGraph();
-
             GetActiveNodeGraph() = document.graph;
 
             g_scenePath = document.path;
@@ -675,14 +742,23 @@ namespace CNode
         {
             std::string loadedName;
             std::vector<SceneObjectEntry> loadedObjects;
+            NodeGraph loadedGraph;
 
-            if (!ReadSceneFile(path, loadedName, loadedObjects))
+            if (!ReadSceneFile(
+                path,
+                loadedName,
+                loadedObjects,
+                loadedGraph))
+            {
                 return;
+            }
 
             CaptureActiveDocument();
 
             SceneObjects::Get().ReplaceAll(loadedObjects);
+
             ResetNodeGraph();
+            GetActiveNodeGraph() = std::move(loadedGraph);
 
             g_scenePath = path;
             g_sceneName = loadedName;
@@ -696,6 +772,7 @@ namespace CNode
             g_pendingAction = PendingAction::None;
             g_pendingOpenPath.clear();
             g_saveThenContinue = false;
+
             AddCurrentDocument();
         }
 
@@ -755,7 +832,9 @@ namespace CNode
 
                     if (!file.is_open())
                     {
-                        ShowError("Could not create Scenes/Main.cns.");
+                        ShowError(
+                            "Could not create Scenes/Main.cns.");
+
                         return;
                     }
 
@@ -894,6 +973,7 @@ namespace CNode
             RequestUnsavedAction(
                 PendingAction::OpenScene,
                 selectedPath);
+
             return;
         }
 
@@ -918,6 +998,7 @@ namespace CNode
             {
                 ShowError(
                     "Could not create a unique scene path in the project.");
+
                 return false;
             }
         }
@@ -936,12 +1017,30 @@ namespace CNode
             g_sceneStatus =
                 "Saved scene: " + g_scenePath.filename().string();
 
+            // Sinkronkan metadata tab aktif.
+            if (g_activeDocument >= 0 &&
+                g_activeDocument < static_cast<int>(g_documents.size()))
+            {
+                SceneDocument& document =
+                    g_documents[g_activeDocument];
+
+                document.path = g_scenePath;
+                document.name = g_sceneName;
+                document.status = g_sceneStatus;
+                document.savedSignature = g_savedSignature;
+                document.dirty = false;
+                document.open = true;
+                document.objects = SceneObjects::Get().GetAll();
+                document.graph = GetActiveNodeGraph();
+            }
+
             return true;
         }
         catch (const fs::filesystem_error& error)
         {
             ShowError(
                 std::string("Save failed: ") + error.what());
+
             return false;
         }
     }
@@ -994,7 +1093,6 @@ namespace CNode
                 if (ImGui::BeginTabItem(label.c_str()))
                 {
                     ActivateDocument(i);
-
                     ImGui::EndTabItem();
                 }
             }

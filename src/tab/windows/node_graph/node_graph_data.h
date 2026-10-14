@@ -34,7 +34,8 @@ namespace CNode
     {
         ClassInput,
         ClassOutput,
-        VariableInput
+        VariableInput,
+        VariableOutput
     };
 
     enum class VariableControl
