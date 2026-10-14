@@ -4,6 +4,9 @@
 #include "node/3d_object/cube/cube_render.h"
 #include "node/3d_object/cube/cube_spawn.h"
 
+#include "class/class_registry.h"
+#include <utility>
+
 #include <algorithm>
 #include <iostream>
 
@@ -249,6 +252,10 @@ namespace CNode
     // NODE GRAPH
     // =========================================================
 
+    // =========================================================
+// NODE GRAPH
+// =========================================================
+
     NodeID AddCubeNode(
         NodeGraph& graph,
         float x,
@@ -260,22 +267,39 @@ namespace CNode
         node.name = "Cube";
         node.x = x;
         node.y = y;
-        node.width = 260.0f;
-        node.height = 180.0f;
+        node.width = 280.0f;
+        node.height = 220.0f;
         node.selected = false;
-
-        // Class default untuk node Cube.
-        node.classes.push_back(
-            CreateDefaultCubeClass(graph, "Transform")
-        );
-
-        node.classes.push_back(
-            CreateDefaultCubeClass(graph, "Visual")
-        );
 
         const NodeID id = node.id;
 
-        graph.nodes.push_back(node);
+        graph.nodes.push_back(std::move(node));
+
+        // Gunakan registry agar variabel default dibuat
+        // sesuai definisi Transform dan Visual.
+        const AddClassResult transformResult =
+            AddClassToNode(graph, id, "Transform");
+
+        const AddClassResult visualResult =
+            AddClassToNode(graph, id, "Visual");
+
+        if (transformResult != AddClassResult::Success ||
+            visualResult != AddClassResult::Success)
+        {
+            // Jangan meninggalkan node yang setengah jadi.
+            graph.nodes.erase(
+                std::remove_if(
+                    graph.nodes.begin(),
+                    graph.nodes.end(),
+                    [id](const GraphNode& item)
+                    {
+                        return item.id == id;
+                    }),
+                graph.nodes.end()
+            );
+
+            return 0;
+        }
 
         return id;
     }

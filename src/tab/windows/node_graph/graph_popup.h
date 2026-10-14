@@ -43,11 +43,11 @@ namespace CNode
             const bool hasObject =
                 GetSelectedSceneObject() != nullptr;
 
+            if (!hasObject)
+                ImGui::BeginDisabled();
+
             if (ImGui::BeginMenu("3D Object"))
             {
-                if (!hasObject)
-                    ImGui::BeginDisabled();
-
                 if (ImGui::MenuItem("Cube"))
                 {
                     AddCubeNode(
@@ -57,11 +57,11 @@ namespace CNode
                     );
                 }
 
-                if (!hasObject)
-                    ImGui::EndDisabled();
-
                 ImGui::EndMenu();
             }
+
+            if (!hasObject)
+                ImGui::EndDisabled();
 
             if (!hasObject)
             {
