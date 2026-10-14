@@ -5,6 +5,7 @@
 
 #include "tab/windows/node_graph/node_graph_data.h"
 #include "node/3d_object/cube/cube.h"
+#include "tab/windows/object_list/object_list_data.h"
 
 namespace CNode
 {
@@ -34,28 +35,44 @@ namespace CNode
             ImGuiCond_Appearing
         );
 
-        if (!ImGui::BeginPopup(
+        if (ImGui::BeginPopup(
             "CNodeAddNodePopup",
             ImGuiWindowFlags_AlwaysAutoResize |
             ImGuiWindowFlags_NoSavedSettings))
         {
-            return;
-        }
+            const bool hasObject =
+                GetSelectedSceneObject() != nullptr;
 
-        if (ImGui::BeginMenu("3D Object"))
-        {
-            if (ImGui::MenuItem("Cube"))
+            if (ImGui::BeginMenu("3D Object"))
             {
-                AddCubeNode(
-                    graph,
-                    state.graphPosition.x,
-                    state.graphPosition.y
+                if (!hasObject)
+                    ImGui::BeginDisabled();
+
+                if (ImGui::MenuItem("Cube"))
+                {
+                    AddCubeNode(
+                        graph,
+                        state.graphPosition.x,
+                        state.graphPosition.y
+                    );
+                }
+
+                if (!hasObject)
+                    ImGui::EndDisabled();
+
+                ImGui::EndMenu();
+            }
+
+            if (!hasObject)
+            {
+                ImGui::Separator();
+
+                ImGui::TextDisabled(
+                    "Select an object in Object List first."
                 );
             }
 
-            ImGui::EndMenu();
+            ImGui::EndPopup();
         }
-
-        ImGui::EndPopup();
     }
 }

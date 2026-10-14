@@ -8,7 +8,7 @@ namespace CNode
 {
     inline void BeginRenameSceneObject(std::uint64_t id)
     {
-        SceneObject* object = FindSceneObject(id);
+        ObjectListItem* object = FindSceneObject(id);
 
         if (!object)
             return;
@@ -31,7 +31,7 @@ namespace CNode
 
     inline void CommitRenameSceneObject()
     {
-        SceneObject* object = FindSceneObject(renamingObjectId);
+        ObjectListItem* object = FindSceneObject(renamingObjectId);
 
         if (object && objectRenameBuffer[0] != '\0')
             object->name = objectRenameBuffer;
@@ -43,7 +43,7 @@ namespace CNode
 
     inline void CancelRenameSceneObject()
     {
-        SceneObject* object = FindSceneObject(renamingObjectId);
+        ObjectListItem* object = FindSceneObject(renamingObjectId);
 
         if (object)
             object->name = originalObjectName;

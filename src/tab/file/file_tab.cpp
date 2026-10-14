@@ -56,6 +56,27 @@ namespace CNode
 
         bool g_saveThenContinue = false;
 
+        struct SceneDocument
+        {
+            int id = 0;
+
+            fs::path path;
+            std::string name = "Untitled";
+            std::string status = "New scene created.";
+            std::string savedSignature;
+
+            bool open = true;
+            bool dirty = false;
+
+            std::vector<SceneObjectEntry> objects;
+            NodeGraph graph;
+        };
+
+        std::vector<SceneDocument> g_documents;
+
+        int g_activeDocument = -1;
+        int g_nextDocumentID = 1;
+
         void ShowError(const char* message)
         {
             g_errorMessage = message ? message : "Unknown scene error.";
@@ -541,20 +562,113 @@ namespace CNode
             return true;
         }
 
+        void CaptureActiveDocument()
+        {
+            if (g_activeDocument < 0 ||
+                g_activeDocument >=
+                static_cast<int>(g_documents.size()))
+            {
+                return;
+            }
+
+            UpdateDirtyState();
+
+            SceneDocument& document =
+                g_documents[g_activeDocument];
+
+            document.path = g_scenePath;
+            document.name = g_sceneName;
+            document.status = g_sceneStatus;
+            document.savedSignature = g_savedSignature;
+            document.open = g_sceneOpen;
+            document.dirty = g_sceneDirty;
+
+            document.objects = SceneObjects::Get().GetAll();
+            document.graph = GetActiveNodeGraph();
+        }
+
+        void ActivateDocument(int index)
+        {
+            if (index < 0 ||
+                index >= static_cast<int>(g_documents.size()))
+            {
+                return;
+            }
+
+            if (index == g_activeDocument)
+                return;
+
+            CaptureActiveDocument();
+
+            g_activeDocument = index;
+
+            const SceneDocument& document =
+                g_documents[index];
+
+            SceneObjects::Get().ReplaceAll(
+                document.objects
+            );
+
+            ResetNodeGraph();
+
+            GetActiveNodeGraph() = document.graph;
+
+            g_scenePath = document.path;
+            g_sceneName = document.name;
+            g_sceneStatus = document.status;
+            g_savedSignature = document.savedSignature;
+
+            g_sceneOpen = document.open;
+            g_sceneDirty = document.dirty;
+
+            g_pendingAction = PendingAction::None;
+            g_pendingOpenPath.clear();
+            g_saveThenContinue = false;
+        }
+
+        void AddCurrentDocument()
+        {
+            SceneDocument document;
+
+            document.id = g_nextDocumentID++;
+            document.path = g_scenePath;
+            document.name = g_sceneName;
+            document.status = g_sceneStatus;
+            document.savedSignature = g_savedSignature;
+
+            document.open = g_sceneOpen;
+            document.dirty = g_sceneDirty;
+
+            document.objects = SceneObjects::Get().GetAll();
+            document.graph = GetActiveNodeGraph();
+
+            g_documents.push_back(std::move(document));
+
+            g_activeDocument =
+                static_cast<int>(g_documents.size()) - 1;
+        }
+
         void CreateEmptyScene()
         {
+            CaptureActiveDocument();
+
             SceneObjects::Get().Clear();
             ResetNodeGraph();
 
             g_scenePath.clear();
             g_sceneName = "Untitled";
             g_sceneOpen = true;
+
             g_savedSignature = BuildObjectSignature();
             g_sceneDirty = false;
+
             g_sceneStatus = "New scene created.";
+
             g_pendingAction = PendingAction::None;
             g_pendingOpenPath.clear();
             g_saveThenContinue = false;
+
+            AddCurrentDocument();
         }
 
         void OpenSceneFromPath(const fs::path& path)
@@ -564,6 +678,8 @@ namespace CNode
 
             if (!ReadSceneFile(path, loadedName, loadedObjects))
                 return;
+
+            CaptureActiveDocument();
 
             SceneObjects::Get().ReplaceAll(loadedObjects);
             ResetNodeGraph();
@@ -580,6 +696,7 @@ namespace CNode
             g_pendingAction = PendingAction::None;
             g_pendingOpenPath.clear();
             g_saveThenContinue = false;
+            AddCurrentDocument();
         }
 
         void ContinuePendingAction()
@@ -843,6 +960,47 @@ namespace CNode
     void DrawSceneDialogs()
     {
         DrawSceneDialogsInternal();
+    }
+
+    void DrawSceneDocumentTabs()
+    {
+        if (g_documents.empty())
+            return;
+
+        UpdateDirtyState();
+        CaptureActiveDocument();
+
+        if (ImGui::BeginTabBar(
+            "##CNodeSceneDocuments",
+            ImGuiTabBarFlags_Reorderable))
+        {
+            for (int i = 0;
+                i < static_cast<int>(g_documents.size());
+                ++i)
+            {
+                SceneDocument& document = g_documents[i];
+
+                std::string label =
+                    document.path.empty()
+                    ? document.name
+                    : document.path.filename().string();
+
+                if (document.dirty)
+                    label += " *";
+
+                label += "###SceneDocument_";
+                label += std::to_string(document.id);
+
+                if (ImGui::BeginTabItem(label.c_str()))
+                {
+                    ActivateDocument(i);
+
+                    ImGui::EndTabItem();
+                }
+            }
+
+            ImGui::EndTabBar();
+        }
     }
 
     void DrawFileTab()

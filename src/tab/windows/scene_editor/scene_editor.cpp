@@ -4,6 +4,7 @@
 #include "scene_grid.h"
 #include "scene_gizmo.h"
 #include "scene_viewport_renderer.h"
+#include "tab/file/file_tab.h"
 
 #include <cstdint>
 
@@ -151,6 +152,8 @@ namespace CNode
         }
 
         ImGui::Begin(title, open);
+
+        DrawSceneDocumentTabs();
 
         const ImVec2 available = ImGui::GetContentRegionAvail();
 

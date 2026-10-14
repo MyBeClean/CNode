@@ -8,7 +8,7 @@ namespace CNode
 {
     inline void CreateSceneObject()
     {
-        SceneObject object;
+        ObjectListItem object;
         object.id = nextObjectId++;
         object.name = "NewObject";
 

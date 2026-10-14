@@ -11,5 +11,7 @@ namespace CNode
     void OpenScene();
     bool SaveScene();
 
+    void DrawSceneDocumentTabs();
+
     std::string GetActiveSceneDisplayName();
 }
