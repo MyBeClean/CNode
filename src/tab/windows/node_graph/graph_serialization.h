@@ -3,6 +3,7 @@
 
 #include "tab/windows/node_graph/node_graph_data.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -15,7 +16,6 @@ namespace CNode
     inline std::string SerializeNodeGraph(const NodeGraph& graph)
     {
         std::ostringstream out;
-
         out << std::setprecision(9);
 
         out << graph.id << ' '
@@ -84,6 +84,9 @@ namespace CNode
         return out.str();
     }
 
+    // Memeriksa apakah socket memang dimiliki node/class/variable.
+    // Socket class input yang sudah terhubung tetap valid sebagai
+    // target koneksi yang tersimpan.
     inline bool IsValidSocketReference(
         const NodeGraph& graph,
         const SocketRef& socket)
@@ -98,11 +101,22 @@ namespace CNode
             if (cls.id != socket.classID)
                 continue;
 
-            if (socket.kind == SocketKind::ClassInput)
-                return !cls.classInputConnected;
+            switch (socket.kind)
+            {
+            case SocketKind::ClassInput:
+                return socket.variableID == 0;
 
-            if (socket.kind == SocketKind::ClassOutput)
-                return IsClassOutputAvailable(cls);
+            case SocketKind::ClassOutput:
+                return socket.variableID == 0 &&
+                    IsClassOutputAvailable(cls);
+
+            case SocketKind::VariableInput:
+            case SocketKind::VariableOutput:
+                break;
+
+            default:
+                return false;
+            }
 
             for (const auto& variable : cls.variables)
             {
@@ -113,8 +127,10 @@ namespace CNode
                     return false;
 
                 if (socket.kind == SocketKind::VariableInput)
+                {
                     return variable.hasInputSocket &&
-                    !cls.classInputConnected;
+                        !cls.classInputConnected;
+                }
 
                 if (socket.kind == SocketKind::VariableOutput)
                     return variable.hasOutputSocket;
@@ -187,6 +203,7 @@ namespace CNode
         }
 
         std::unordered_set<std::string> occupiedInputs;
+        std::unordered_set<std::string> connectedClassInputs;
 
         for (const auto& connection : graph.connections)
         {
@@ -208,8 +225,22 @@ namespace CNode
             const bool targetClass =
                 target.kind == SocketKind::ClassInput;
 
+            // Class hanya terhubung ke class.
             if (sourceClass != targetClass)
                 return false;
+
+            // Output harus benar-benar output dan target harus input.
+            if (source.kind != SocketKind::ClassOutput &&
+                source.kind != SocketKind::VariableOutput)
+            {
+                return false;
+            }
+
+            if (target.kind != SocketKind::ClassInput &&
+                target.kind != SocketKind::VariableInput)
+            {
+                return false;
+            }
 
             if (source.nodeID == target.nodeID &&
                 source.classID == target.classID &&
@@ -218,14 +249,58 @@ namespace CNode
                 return false;
             }
 
-            std::ostringstream key;
-            key << target.nodeID << ':'
+            std::ostringstream inputKey;
+            inputKey << target.nodeID << ':'
                 << target.classID << ':'
                 << target.variableID << ':'
                 << static_cast<int>(target.kind);
 
-            if (!occupiedInputs.insert(key.str()).second)
+            if (!occupiedInputs.insert(inputKey.str()).second)
                 return false;
+
+            if (target.kind == SocketKind::ClassInput)
+            {
+                const GraphNode* targetNode =
+                    FindNode(graph, target.nodeID);
+
+                if (!targetNode)
+                    return false;
+
+                const ClassInstance* targetClass = nullptr;
+
+                for (const auto& cls : targetNode->classes)
+                {
+                    if (cls.id == target.classID)
+                    {
+                        targetClass = &cls;
+                        break;
+                    }
+                }
+
+                if (!targetClass || !targetClass->classInputConnected)
+                    return false;
+
+                connectedClassInputs.insert(inputKey.str());
+            }
+        }
+
+        // Status classInputConnected harus sesuai dengan kabel
+        // yang benar-benar ada di graph.
+        for (const auto& node : graph.nodes)
+        {
+            for (const auto& cls : node.classes)
+            {
+                std::ostringstream inputKey;
+                inputKey << node.id << ':'
+                    << cls.id << ":0:"
+                    << static_cast<int>(SocketKind::ClassInput);
+
+                const bool hasConnection =
+                    connectedClassInputs.count(inputKey.str()) != 0;
+
+                if (cls.classInputConnected != hasConnection)
+                    return false;
+            }
         }
 
         return true;

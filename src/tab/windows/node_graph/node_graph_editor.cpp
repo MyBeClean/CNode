@@ -204,38 +204,49 @@ namespace CNode
             return true;
         }
 
+
         bool RemoveConnectionAtSocket(
             NodeGraph& g,
             const SocketRef& socket)
         {
-            const std::size_t oldSize = g.connections.size();
+            bool removed = false;
 
-            g.connections.erase(
-                std::remove_if(
-                    g.connections.begin(),
-                    g.connections.end(),
-                    [&](const Connection& connection)
-                    {
-                        return SameSocket(connection.source, socket) ||
-                            SameSocket(connection.target, socket);
-                    }),
-                g.connections.end()
-            );
-
-            if (oldSize == g.connections.size())
-                return false;
-
-            if (socket.kind == SocketKind::ClassInput)
+            // Jangan hapus koneksi sebelum memeriksa targetnya.
+            // Kita perlu mengetahui class input mana yang harus
+            // dikembalikan ke variable mode.
+            for (auto it = g.connections.begin();
+                it != g.connections.end();)
             {
-                DisconnectClassInput(
-                    g,
-                    socket.nodeID,
-                    socket.classID
-                );
+                const bool matchesSource =
+                    SameSocket(it->source, socket);
+
+                const bool matchesTarget =
+                    SameSocket(it->target, socket);
+
+                if (!matchesSource && !matchesTarget)
+                {
+                    ++it;
+                    continue;
+                }
+
+                // Kabel class yang dihapus dari sisi output tetap
+                // harus memutus status input pada class target.
+                if (it->target.kind == SocketKind::ClassInput)
+                {
+                    DisconnectClassInput(
+                        g,
+                        it->target.nodeID,
+                        it->target.classID
+                    );
+                }
+
+                it = g.connections.erase(it);
+                removed = true;
             }
 
-            return true;
+            return removed;
         }
+
 
         void BuildSocketVisuals(
             NodeGraph& g,
@@ -705,12 +716,24 @@ namespace CNode
 
         if (ImGui::Button("+"))
         {
+            // Simpan posisi mouse untuk lokasi popup.
             const ImVec2 mouse = ImGui::GetIO().MousePos;
+
+            // Tombol + berada di toolbar, jadi gunakan posisi
+            // canvas yang sebenarnya untuk menghitung koordinat graph.
+            const ImVec2 canvasOrigin =
+                ImGui::GetCursorScreenPos();
+
+            const ImVec2 graphPosition = ScreenToGraph(
+                mouse,
+                canvasOrigin,
+                graphView
+            );
 
             OpenGraphPopup(
                 popupState,
                 mouse,
-                ScreenToGraph(mouse, ImGui::GetCursorScreenPos(), graphView)
+                graphPosition
             );
         }
 
