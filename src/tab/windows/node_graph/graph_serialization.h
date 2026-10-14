@@ -3,15 +3,20 @@
 
 #include "tab/windows/node_graph/node_graph_data.h"
 
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <unordered_set>
+#include <utility>
 
 namespace CNode
 {
     inline std::string SerializeNodeGraph(const NodeGraph& graph)
     {
         std::ostringstream out;
+
+        out << std::setprecision(9);
 
         out << graph.id << ' '
             << graph.nextNodeID << ' '
@@ -63,13 +68,13 @@ namespace CNode
 
         for (const auto& connection : graph.connections)
         {
-            const auto writeSocket = [&](const SocketRef& s)
+            const auto writeSocket = [&](const SocketRef& socket)
                 {
-                    out << s.nodeID << ' '
-                        << s.classID << ' '
-                        << s.variableID << ' '
-                        << static_cast<int>(s.kind) << ' '
-                        << static_cast<int>(s.type) << ' ';
+                    out << socket.nodeID << ' '
+                        << socket.classID << ' '
+                        << socket.variableID << ' '
+                        << static_cast<int>(socket.kind) << ' '
+                        << static_cast<int>(socket.type) << ' ';
                 };
 
             writeSocket(connection.source);
@@ -77,6 +82,153 @@ namespace CNode
         }
 
         return out.str();
+    }
+
+    inline bool IsValidSocketReference(
+        const NodeGraph& graph,
+        const SocketRef& socket)
+    {
+        const GraphNode* node = FindNode(graph, socket.nodeID);
+
+        if (!node)
+            return false;
+
+        for (const auto& cls : node->classes)
+        {
+            if (cls.id != socket.classID)
+                continue;
+
+            if (socket.kind == SocketKind::ClassInput)
+                return !cls.classInputConnected;
+
+            if (socket.kind == SocketKind::ClassOutput)
+                return IsClassOutputAvailable(cls);
+
+            for (const auto& variable : cls.variables)
+            {
+                if (variable.id != socket.variableID)
+                    continue;
+
+                if (variable.type != socket.type)
+                    return false;
+
+                if (socket.kind == SocketKind::VariableInput)
+                    return variable.hasInputSocket &&
+                    !cls.classInputConnected;
+
+                if (socket.kind == SocketKind::VariableOutput)
+                    return variable.hasOutputSocket;
+            }
+        }
+
+        return false;
+    }
+
+    inline bool ValidateNodeGraph(const NodeGraph& graph)
+    {
+        std::unordered_set<NodeID> nodeIDs;
+        std::unordered_set<ClassID> classIDs;
+        std::unordered_set<VariableID> variableIDs;
+
+        NodeID maxNodeID = 0;
+        ClassID maxClassID = 0;
+        VariableID maxVariableID = 0;
+
+        for (const auto& node : graph.nodes)
+        {
+            if (node.id == 0 ||
+                !nodeIDs.insert(node.id).second ||
+                !std::isfinite(node.x) ||
+                !std::isfinite(node.y) ||
+                !std::isfinite(node.width) ||
+                !std::isfinite(node.height) ||
+                node.width < 40.0f ||
+                node.height < 40.0f)
+            {
+                return false;
+            }
+
+            maxNodeID = std::max(maxNodeID, node.id);
+
+            for (const auto& cls : node.classes)
+            {
+                if (cls.id == 0 ||
+                    !classIDs.insert(cls.id).second ||
+                    cls.className.empty())
+                {
+                    return false;
+                }
+
+                maxClassID = std::max(maxClassID, cls.id);
+
+                for (const auto& variable : cls.variables)
+                {
+                    if (variable.id == 0 ||
+                        !variableIDs.insert(variable.id).second ||
+                        !std::isfinite(variable.floatValue) ||
+                        !std::isfinite(variable.vectorValue.x) ||
+                        !std::isfinite(variable.vectorValue.y) ||
+                        !std::isfinite(variable.vectorValue.z))
+                    {
+                        return false;
+                    }
+
+                    maxVariableID =
+                        std::max(maxVariableID, variable.id);
+                }
+            }
+        }
+
+        if (graph.nextNodeID <= maxNodeID ||
+            graph.nextClassID <= maxClassID ||
+            graph.nextVariableID <= maxVariableID)
+        {
+            return false;
+        }
+
+        std::unordered_set<std::string> occupiedInputs;
+
+        for (const auto& connection : graph.connections)
+        {
+            const SocketRef& source = connection.source;
+            const SocketRef& target = connection.target;
+
+            if (!IsValidSocketReference(graph, source) ||
+                !IsValidSocketReference(graph, target))
+            {
+                return false;
+            }
+
+            if (!AreSocketTypesCompatible(source.type, target.type))
+                return false;
+
+            const bool sourceClass =
+                source.kind == SocketKind::ClassOutput;
+
+            const bool targetClass =
+                target.kind == SocketKind::ClassInput;
+
+            if (sourceClass != targetClass)
+                return false;
+
+            if (source.nodeID == target.nodeID &&
+                source.classID == target.classID &&
+                source.variableID == target.variableID)
+            {
+                return false;
+            }
+
+            std::ostringstream key;
+            key << target.nodeID << ':'
+                << target.classID << ':'
+                << target.variableID << ':'
+                << static_cast<int>(target.kind);
+
+            if (!occupiedInputs.insert(key.str()).second)
+                return false;
+        }
+
+        return true;
     }
 
     inline bool DeserializeNodeGraph(
@@ -97,8 +249,6 @@ namespace CNode
             return false;
         }
 
-        // Batas defensif untuk mencegah file rusak
-        // meminta alokasi memori yang tidak masuk akal.
         if (nodeCount > 100000)
             return false;
 
@@ -142,23 +292,23 @@ namespace CNode
 
                 for (std::size_t vi = 0; vi < variableCount; ++vi)
                 {
-                    ClassVariable var;
+                    ClassVariable variable;
                     int type = 0;
                     int control = 0;
 
-                    if (!(in >> var.id
-                        >> std::quoted(var.name)
+                    if (!(in >> variable.id
+                        >> std::quoted(variable.name)
                         >> type >> control
-                        >> var.hasInputSocket
-                        >> var.hasOutputSocket
-                        >> var.boolValue
-                        >> var.floatValue
-                        >> var.intValue
-                        >> var.vectorValue.x
-                        >> var.vectorValue.y
-                        >> var.vectorValue.z
-                        >> std::quoted(var.stringValue)
-                        >> std::quoted(var.selectedResource)))
+                        >> variable.hasInputSocket
+                        >> variable.hasOutputSocket
+                        >> variable.boolValue
+                        >> variable.floatValue
+                        >> variable.intValue
+                        >> variable.vectorValue.x
+                        >> variable.vectorValue.y
+                        >> variable.vectorValue.z
+                        >> std::quoted(variable.stringValue)
+                        >> std::quoted(variable.selectedResource)))
                     {
                         return false;
                     }
@@ -171,10 +321,11 @@ namespace CNode
                         return false;
                     }
 
-                    var.type = static_cast<SocketType>(type);
-                    var.control = static_cast<VariableControl>(control);
+                    variable.type = static_cast<SocketType>(type);
+                    variable.control =
+                        static_cast<VariableControl>(control);
 
-                    cls.variables.push_back(std::move(var));
+                    cls.variables.push_back(std::move(variable));
                 }
 
                 node.classes.push_back(std::move(cls));
@@ -185,21 +336,24 @@ namespace CNode
 
         std::size_t connectionCount = 0;
 
-        if (!(in >> connectionCount) || connectionCount > 1000000)
+        if (!(in >> connectionCount) ||
+            connectionCount > 1000000)
+        {
             return false;
+        }
 
         for (std::size_t i = 0; i < connectionCount; ++i)
         {
             Connection connection;
 
-            auto readSocket = [&](SocketRef& s) -> bool
+            const auto readSocket = [&](SocketRef& socket) -> bool
                 {
                     int kind = 0;
                     int type = 0;
 
-                    if (!(in >> s.nodeID
-                        >> s.classID
-                        >> s.variableID
+                    if (!(in >> socket.nodeID
+                        >> socket.classID
+                        >> socket.variableID
                         >> kind >> type))
                     {
                         return false;
@@ -213,8 +367,9 @@ namespace CNode
                         return false;
                     }
 
-                    s.kind = static_cast<SocketKind>(kind);
-                    s.type = static_cast<SocketType>(type);
+                    socket.kind = static_cast<SocketKind>(kind);
+                    socket.type = static_cast<SocketType>(type);
+
                     return true;
                 };
 
@@ -228,7 +383,11 @@ namespace CNode
         }
 
         std::string extra;
+
         if (in >> extra)
+            return false;
+
+        if (!ValidateNodeGraph(parsed))
             return false;
 
         result = std::move(parsed);
