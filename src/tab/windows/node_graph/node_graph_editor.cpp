@@ -275,26 +275,22 @@ namespace CNode
                     const SocketType classType =
                         GetClassSocketType(cls);
 
-                    if (!cls.classInputConnected)
+                    SocketVisual socket;
+                    socket.ref.nodeID = node.id;
+                    socket.ref.classID = cls.id;
+                    socket.ref.variableID = 0;
+                    socket.ref.kind = SocketKind::ClassInput;
+                    socket.ref.type = classType;
 
-                    {
-                        // Socket tetap disimpan agar kabel selalu bisa menemukan
-                        // posisi endpoint, meskipun input sudah terhubung.
-                        SocketVisual socket;
-                        socket.ref.nodeID = node.id;
-                        socket.ref.classID = cls.id;
-                        socket.ref.variableID = 0;
-                        socket.ref.kind = SocketKind::ClassInput;
-                        socket.ref.type = classType;
-                        socket.position = ImVec2(
-                            nodeScreen.x,
-                            nodeScreen.y + classCenterY * zoom
-                        );
-                        socket.label = cls.className;
-                        socket.output = false;
+                    socket.position = ImVec2(
+                        nodeScreen.x,
+                        nodeScreen.y + classCenterY * zoom
+                    );
 
-                        sockets.push_back(socket);
-                    }
+                    socket.label = cls.className;
+                    socket.output = false;
+
+                    sockets.push_back(socket);
 
 
                     if (IsClassOutputAvailable(cls))
@@ -710,6 +706,7 @@ namespace CNode
         pendingSocket = SocketRef{};
     }
 
+
     void DrawNodeGraphEditor(const char* title, bool* open)
     {
         if (!ImGui::Begin(title, open))
@@ -745,7 +742,11 @@ namespace CNode
         ImGui::TextUnformatted("Node Graph");
         ImGui::SameLine();
 
-        ImGui::TextDisabled("%.0f%%", graphView.zoom * 100.0f);
+        ImGui::TextDisabled(
+            "%.0f%%",
+            graphView.zoom * 100.0f
+        );
+
         ImGui::SameLine();
 
         if (ImGui::SmallButton("Reset Zoom"))
@@ -782,7 +783,12 @@ namespace CNode
             IM_COL32(35, 35, 39, 255)
         );
 
-        DrawGraphGrid(drawList, canvasOrigin, canvasMax, graphView);
+        DrawGraphGrid(
+            drawList,
+            canvasOrigin,
+            canvasMax,
+            graphView
+        );
 
         ImGui::InvisibleButton(
             "##NodeGraphCanvas",
@@ -804,8 +810,15 @@ namespace CNode
             );
         }
 
+        // Hitung posisi socket untuk mendeteksi interaksi.
         std::vector<SocketVisual> sockets;
-        BuildSocketVisuals(graph, canvasOrigin, graphView, sockets);
+
+        BuildSocketVisuals(
+            graph,
+            canvasOrigin,
+            graphView,
+            sockets
+        );
 
         bool socketConsumed = false;
         SocketVisual* hoveredSocket = nullptr;
@@ -822,7 +835,11 @@ namespace CNode
         if (hoveredSocket &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
-            RemoveConnectionAtSocket(graph, hoveredSocket->ref);
+            RemoveConnectionAtSocket(
+                graph,
+                hoveredSocket->ref
+            );
+
             connectingSocket = false;
             socketConsumed = true;
         }
@@ -834,7 +851,9 @@ namespace CNode
 
             if (connectingSocket)
             {
-                if (CanConnect(pendingSocket, hoveredSocket->ref))
+                if (CanConnect(
+                    pendingSocket,
+                    hoveredSocket->ref))
                 {
                     AddConnection(
                         graph,
@@ -867,6 +886,7 @@ namespace CNode
             connectingSocket = false;
         }
 
+        // Proses pemilihan dan pergerakan node.
         if (!socketConsumed)
         {
             UpdateGraphSelection(
@@ -897,16 +917,50 @@ namespace CNode
             );
         }
 
-        drawList->PushClipRect(canvasOrigin, canvasMax, true);
+        // PENTING:
+        // Node mungkin sudah berpindah akibat drag.
+        // Hitung ulang posisi socket sebelum menggambar kabel,
+        // agar kabel mengikuti posisi node pada frame yang sama.
+        BuildSocketVisuals(
+            graph,
+            canvasOrigin,
+            graphView,
+            sockets
+        );
 
-        DrawConnections(drawList, graph, sockets);
-        DrawGraphNodes(drawList, canvasOrigin, graphView, sockets);
-        DrawGraphSelectionBox(selectionState, drawList);
+        // Gambar seluruh isi canvas.
+        drawList->PushClipRect(
+            canvasOrigin,
+            canvasMax,
+            true
+        );
+
+        DrawConnections(
+            drawList,
+            graph,
+            sockets
+        );
+
+        DrawGraphNodes(
+            drawList,
+            canvasOrigin,
+            graphView,
+            sockets
+        );
+
+        DrawGraphSelectionBox(
+            selectionState,
+            drawList
+        );
 
         drawList->PopClipRect();
 
-        DrawGraphPopup(popupState, graph);
+        DrawGraphPopup(
+            popupState,
+            graph
+        );
 
         ImGui::End();
     }
+
 }

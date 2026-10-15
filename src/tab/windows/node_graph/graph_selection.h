@@ -241,6 +241,29 @@ namespace CNode
 
         if (hitNode)
         {
+            const NodeID hitNodeID = hitNode->id;
+
+            // Bawa node yang diklik ke urutan paling depan.
+            auto nodeIt = std::find_if(
+                graph.nodes.begin(),
+                graph.nodes.end(),
+                [hitNodeID](const GraphNode& node)
+                {
+                    return node.id == hitNodeID;
+                }
+            );
+
+            if (nodeIt != graph.nodes.end() &&
+                std::next(nodeIt) != graph.nodes.end())
+            {
+                GraphNode frontNode = std::move(*nodeIt);
+                graph.nodes.erase(nodeIt);
+                graph.nodes.push_back(std::move(frontNode));
+            }
+
+            // Pointer lama tidak boleh digunakan setelah erase.
+            hitNode = FindNode(graph, hitNodeID);
+
             if (ctrl)
             {
                 hitNode->selected = !hitNode->selected;
