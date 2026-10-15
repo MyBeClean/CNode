@@ -505,6 +505,7 @@ namespace CNode
             }
         }
 
+
         void DrawGraphNodes(
             ImDrawList* drawList,
             const ImVec2& canvasOrigin,
@@ -535,8 +536,12 @@ namespace CNode
                     ? IM_COL32(100, 165, 255, 255)
                     : IM_COL32(100, 105, 120, 255);
 
+                // Body node.
                 drawList->AddRectFilled(
-                    nodeMin, nodeMax, backgroundColor, 7.0f * zoom
+                    nodeMin,
+                    nodeMax,
+                    backgroundColor,
+                    7.0f * zoom
                 );
 
                 drawList->AddRect(
@@ -548,6 +553,7 @@ namespace CNode
                     node.selected ? 2.0f : 1.0f
                 );
 
+                // Header node: nama node hanya digambar sekali.
                 drawList->AddText(
                     ImGui::GetFont(),
                     fontSize,
@@ -559,6 +565,7 @@ namespace CNode
                     node.name.c_str()
                 );
 
+                // Garis pemisah header dan isi node.
                 const float headerY = nodeMin.y + 36.0f * zoom;
 
                 drawList->AddLine(
@@ -567,6 +574,7 @@ namespace CNode
                     IM_COL32(100, 105, 120, 255)
                 );
 
+                // Isi node dimulai di bawah header.
                 float classY = nodeMin.y + 48.0f * zoom;
 
                 for (const auto& cls : node.classes)
@@ -581,6 +589,7 @@ namespace CNode
                         classY + 30.0f * zoom
                     );
 
+                    // Kotak class.
                     drawList->AddRectFilled(
                         classMin,
                         classMax,
@@ -588,6 +597,7 @@ namespace CNode
                         4.0f * zoom
                     );
 
+                    // Nama class hanya digambar sekali di dalam kotak.
                     drawList->AddText(
                         ImGui::GetFont(),
                         fontSize,
@@ -601,6 +611,7 @@ namespace CNode
 
                     classY += 36.0f * zoom;
 
+                    // Daftar variabel.
                     if (cls.expanded &&
                         cls.hasVariables &&
                         !cls.classInputConnected)
@@ -612,7 +623,7 @@ namespace CNode
                                 fontSize * 0.9f,
                                 ImVec2(
                                     nodeMin.x + 12.0f * zoom,
-                                    nodeMin.y + classY
+                                    classY
                                 ),
                                 IM_COL32(185, 195, 210, 255),
                                 variable.name.c_str()
@@ -626,6 +637,7 @@ namespace CNode
                 }
             }
 
+            // Gambar socket setelah body dan teks node.
             for (const auto& socket : sockets)
             {
                 const float radius = 5.5f * zoom;
@@ -651,17 +663,21 @@ namespace CNode
                     1.0f
                 );
 
+                // Lewati label kosong agar tidak ada teks duplikat.
+                if (socket.label.empty())
+                    continue;
+
                 const ImVec2 labelPosition(
                     socket.position.x +
                     (socket.output ? -8.0f : 8.0f) * zoom,
                     socket.position.y - 7.0f * zoom
                 );
 
+                const ImVec2 textSize =
+                    ImGui::CalcTextSize(socket.label.c_str());
+
                 if (socket.output)
                 {
-                    const ImVec2 textSize =
-                        ImGui::CalcTextSize(socket.label.c_str());
-
                     drawList->AddText(
                         ImGui::GetFont(),
                         fontSize * 0.8f,
@@ -685,6 +701,7 @@ namespace CNode
                 }
             }
         }
+
     }
 
     NodeGraph& GetActiveNodeGraph()
