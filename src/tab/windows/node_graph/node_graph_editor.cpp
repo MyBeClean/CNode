@@ -276,7 +276,10 @@ namespace CNode
                         GetClassSocketType(cls);
 
                     if (!cls.classInputConnected)
+
                     {
+                        // Socket tetap disimpan agar kabel selalu bisa menemukan
+                        // posisi endpoint, meskipun input sudah terhubung.
                         SocketVisual socket;
                         socket.ref.nodeID = node.id;
                         socket.ref.classID = cls.id;
@@ -292,6 +295,7 @@ namespace CNode
 
                         sockets.push_back(socket);
                     }
+
 
                     if (IsClassOutputAvailable(cls))
                     {
