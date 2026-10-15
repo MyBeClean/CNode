@@ -287,7 +287,7 @@ namespace CNode
                         nodeScreen.y + classCenterY * zoom
                     );
 
-                    socket.label = cls.className;
+                    socket.label.clear();
                     socket.output = false;
 
                     sockets.push_back(socket);
@@ -305,7 +305,7 @@ namespace CNode
                             nodeScreen.x + node.width * zoom,
                             nodeScreen.y + classCenterY * zoom
                         );
-                        socket.label = cls.className;
+                        socket.label.clear();
                         socket.output = true;
 
                         sockets.push_back(socket);
