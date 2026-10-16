@@ -3,5 +3,5 @@
 
 namespace CNode
 {
-    void DrawSceneEditor(bool* open);
+    void DrawSceneEditor(const char* title, bool* open);
 }

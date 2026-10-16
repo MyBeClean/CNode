@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "registration/registration_data.h"
@@ -7,13 +8,12 @@ namespace CNode
 {
     namespace
     {
-        const bool sceneEditorRegistered = RegisterWindow(
-            {
+        const bool sceneEditorAttributeRegistered =
+            RegisterWindowAttribute(
                 "scene_editor",
                 "Scene Editor",
-                true,
-                &DrawSceneEditor
-            }
-        );
+                &DrawSceneEditor,
+                ImGuiDir_None
+            );
     }
 }

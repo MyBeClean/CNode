@@ -65,11 +65,22 @@ namespace CNode
 
         ImGui::StyleColorsDark();
 
+        // Load font Inter.
+        if (!editorFont.Load())
+        {
+            std::cerr
+                << "CNode: Failed to load Inter.ttf. "
+                << "Using ImGui default font.\n";
+        }
+
         if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
         {
+            editorFont.Reset();
             ImGui::DestroyContext();
+
             glfwDestroyWindow(window);
             window = nullptr;
+
             glfwTerminate();
             return false;
         }
@@ -77,9 +88,13 @@ namespace CNode
         if (!ImGui_ImplOpenGL3_Init("#version 330"))
         {
             ImGui_ImplGlfw_Shutdown();
+
+            editorFont.Reset();
             ImGui::DestroyContext();
+
             glfwDestroyWindow(window);
             window = nullptr;
+
             glfwTerminate();
             return false;
         }
@@ -116,7 +131,12 @@ namespace CNode
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // Apply Inter to all editor UI.
+        editorFont.Apply();
+
         CNode::DrawRegisteredWindows();
+
+        ImGui::PopFont();
 
         ImGui::Render();
 
@@ -124,6 +144,7 @@ namespace CNode
         int height = 0;
 
         glfwGetFramebufferSize(window, &width, &height);
+
         glViewport(0, 0, width, height);
 
         glClearColor(0.12f, 0.13f, 0.15f, 1.0f);
@@ -138,6 +159,9 @@ namespace CNode
         {
             ImGui_ImplOpenGL3_Shutdown();
             ImGui_ImplGlfw_Shutdown();
+
+            editorFont.Reset();
+
             ImGui::DestroyContext();
         }
 

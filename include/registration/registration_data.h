@@ -1,26 +1,56 @@
 
 #pragma once
 
+#include "imgui.h"
+
+#include <string>
 #include <vector>
 
 namespace CNode
 {
-    using WindowDrawFunction = void (*)(bool* open);
+    using WindowDrawFunction = void (*)(const char* title, bool* open);
 
-    struct WindowAttribute
+    struct WindowType
     {
-        const char* id;
-        const char* name;
-        bool defaultOpen;
-        WindowDrawFunction draw;
+        std::string id;
+        std::string name;
+        WindowDrawFunction draw = nullptr;
 
-        // Status runtime, terpisah dari defaultOpen.
-        bool open = false;
+        ImGuiDir defaultDockDirection = ImGuiDir_None;
     };
 
-    bool RegisterWindow(const WindowAttribute& attribute);
+    struct WindowInstance
+    {
+        unsigned long long instanceID = 0;
+        std::string typeID;
+        std::string title;
+        bool open = true;
+    };
 
-    std::vector<WindowAttribute>& GetRegisteredWindows();
+    // Mendaftarkan tipe window ke registry aktif.
+    bool RegisterWindowType(
+        const char* id,
+        const char* name,
+        WindowDrawFunction draw,
+        ImGuiDir defaultDockDirection = ImGuiDir_None
+    );
 
+    // Mendaftarkan metadata dari attribute.
+    bool RegisterWindowAttribute(
+        const char* id,
+        const char* name,
+        WindowDrawFunction draw,
+        ImGuiDir defaultDockDirection = ImGuiDir_None
+    );
+
+    // Memproses seluruh attribute yang sudah ditemukan.
+    void RegisterWindowAttributes();
+
+    WindowInstance* AddWindow(const char* typeID);
+
+    const std::vector<WindowType>& GetRegisteredWindows();
+    std::vector<WindowInstance>& GetWindowInstances();
+
+    // Tetap menjadi entry point registry window.
     void Windows();
 }

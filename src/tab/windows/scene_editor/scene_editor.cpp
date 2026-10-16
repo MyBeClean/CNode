@@ -5,15 +5,15 @@
 
 namespace CNode
 {
-    void DrawSceneEditor(bool* open)
+    void DrawSceneEditor(const char* title, bool* open)
     {
-        if (!ImGui::Begin("Scene Editor", open))
+        if (!ImGui::Begin(title, open))
         {
             ImGui::End();
             return;
         }
 
-        // Scene Editor sengaja dikosongkan untuk pengujian.
+        // Kosong untuk pengujian sistem multi-window.
         ImGui::End();
     }
 }
