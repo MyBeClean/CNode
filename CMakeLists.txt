@@ -54,6 +54,7 @@ add_executable(CNode
 
     src/registration/registration.cpp
     src/registration/registration_data.cpp
+    src/registration/docking.cpp
 
     src/tab/windows/scene_editor/scene_editor.cpp
 
@@ -64,7 +65,7 @@ add_executable(CNode
 
     "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
     "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
-)
+ "include/registration/docking.h" "src/registration/docking.cpp")
 
 target_include_directories(CNode PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"

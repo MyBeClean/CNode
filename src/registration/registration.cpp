@@ -1,6 +1,7 @@
 
 #include "registration/registration.h"
 #include "registration/registration_data.h"
+#include "registration/docking.h"
 
 #include "imgui.h"
 
@@ -31,6 +32,8 @@ namespace CNode
 
             ImGui::EndMainMenuBar();
         }
+
+        DrawEditorDockspace();
 
         // Gambar hanya window yang sedang terbuka.
         for (WindowAttribute& window : windows)
