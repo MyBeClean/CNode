@@ -2,140 +2,98 @@
 
 **A Node-Based Game Engine Built with C++**
 
-CNode is an independent game engine project focused on node-based visual programming, modular architecture, and customizable development workflows. Its goal is to provide a flexible environment where game logic can be designed through interconnected nodes rather than relying entirely on traditional code-based scripting.
+CNode is an independent game engine project built with C++, focused on visual node-based programming, modular architecture, and customizable development workflows.
 
-Built with C++, CNode aims to give developers greater control over how game systems are structured, connected, and extended.
+The engine is designed to provide a visual approach to game development while preserving the flexibility and control of native C++. By combining interconnected node graphs with an extensible engine architecture, CNode aims to make game logic easier to construct, organize, and expand.
+
+CNode is being developed as a long-term project with the goal of creating a flexible game development environment where visual programming, rendering systems, and specialized editing tools can work together within a unified application.
 
 ---
 
 ## Overview
 
-CNode is designed around the idea that game development should be both visual and programmable.
+CNode explores an alternative approach to game development by placing visual programming at the center of its design.
 
-Instead of requiring developers to write every behavior manually, CNode aims to let them construct game logic by connecting nodes that represent inputs, operations, transformations, and behaviors. Each node serves a specific purpose and communicates with other nodes through defined connections.
+Rather than relying entirely on traditional code-based scripting, developers will be able to construct game logic through nodes that represent inputs, operations, transformations, and behaviors. These nodes can be connected to define how information flows through a system and how different operations interact.
 
-This approach is intended to make game logic easier to understand, modify, reuse, and expand while preserving the flexibility needed for more advanced development.
+The engine is also intended to support native C++ development, allowing custom functionality to be implemented when visual nodes alone are insufficient. This combination is designed to provide both an accessible visual workflow and the flexibility required for more advanced game systems.
 
-CNode is envisioned as a modular environment where visual workflows and native C++ functionality can work together.
+## Core Features
 
-## Core Philosophy
+### Node-Based Visual Programming
 
-### 1. Node-Based Development
+CNode is built around a node graph system intended to represent game logic through visual connections.
 
-Visual node graphs are intended to be a central part of CNode.
+Each node serves a specific function and communicates with other nodes through defined inputs and outputs. This approach is intended to make relationships between operations more visible, helping developers understand, modify, and organize their game systems.
 
-Developers will be able to construct logic by connecting nodes through their inputs and outputs. Each connection represents a relationship between operations, allowing complex behaviors to be organized into readable visual workflows.
+The node system is planned to support reusable node types, flexible connections, and more complex workflows as development progresses.
 
-The objective is to make game logic more intuitive to build and easier to maintain without eliminating the option of working directly with code.
+### Modular Architecture
 
-### 2. Modularity
+CNode aims to maintain a modular architecture in which engine systems and editor components have clearly defined responsibilities.
 
-CNode is intended to use a modular architecture in which different systems can be developed and maintained independently.
+This design allows individual components to be developed, maintained, and expanded without unnecessarily coupling the entire application. It also provides a foundation for introducing additional functionality as the engine grows.
 
-The editor, node system, rendering systems, and other engine components should have clearly defined responsibilities. This separation is intended to simplify maintenance, support future expansion, and reduce unnecessary dependencies between components.
+### Native C++ Extensibility
 
-### 3. Extensibility
+Although visual programming is central to CNode, native C++ remains an important part of its design.
 
-An important design goal is to allow developers to extend the engine beyond its built-in functionality.
+Developers are intended to be able to implement custom node types and specialized functionality using C++. This allows the engine to move beyond its built-in capabilities and accommodate more advanced or project-specific requirements.
 
-CNode is intended to support custom node types and native C++ extensions, allowing developers to introduce new operations, behaviors, and specialized workflows when the default functionality is insufficient.
+### Reusable Node Groups
 
-### 4. Developer Control
+Node groups are intended to provide a way to organize related operations into reusable units.
 
-CNode aims to balance visual convenience with low-level control.
+By grouping connected nodes, developers can simplify complex graphs, reduce visual clutter, and create more manageable workflows. This also provides a foundation for reusing logic across different systems and projects.
 
-Visual programming should help developers organize logic, while C++ should remain available for implementing custom systems and functionality that require greater control over execution and behavior.
+### Integrated Development Environment
 
-### 5. Long-Term Flexibility
+CNode is intended to bring multiple development tools into a unified editor.
 
-CNode is being designed with future expansion in mind. Its architecture is intended to accommodate additional editing tools and development workflows without requiring the entire engine to be redesigned whenever a new system is introduced.
+In addition to node-based programming, its long-term direction includes specialized workspaces for tasks such as scene editing, UV editing, and graphics-oriented workflows. Each workspace is intended to provide tools suited to its purpose while remaining part of the same development environment.
 
----
+### Extensible Editor Design
 
-## Planned Design Concepts
+The editor is designed with future expansion in mind, allowing additional panels, windows, and specialized tools to become part of the application.
 
-The following concepts describe the intended direction of CNode.
-
-### Visual Node Graph
-
-The node graph is intended to serve as a visual workspace for constructing game logic.
-
-Its design is centered around:
-
-- Nodes with defined inputs and outputs.
-- Connections between compatible node ports.
-- Reusable node types for common operations.
-- Multiple connections where a node's design permits them.
-- Organized graphs for building complex behaviors.
-- Custom node types implemented through C++.
-
-A possible workflow could connect keyboard input to a transformation operation, then to a movement system, and finally to an object in the game world.
-
-This structure is intended to help developers understand how data and behavior flow through a game system.
-
-### Custom C++ Nodes
-
-CNode aims to make native C++ a part of its extensibility model.
-
-Developers should be able to implement specialized logic through custom node types, enabling functionality that cannot be adequately represented by built-in nodes alone.
-
-The long-term objective is to combine the accessibility of visual programming with the flexibility of native code.
-
-### Node Groups
-
-Node groups are intended to help developers organize related operations into reusable units.
-
-Instead of keeping every operation visible in a large graph, developers could group related logic into a more manageable structure. This would help keep complex systems readable and support reuse across different parts of a project.
-
-### Integrated Editing Workspaces
-
-CNode is envisioned as an editor with multiple workspaces for different development tasks.
-
-Potential workspaces include a node editor, a UV editor, and graphics-oriented editing tools. These workspaces are intended to provide specialized interfaces while remaining part of a cohesive development environment.
-
-### Modular Editor Architecture
-
-The editor is intended to separate its windows, tabs, panels, and specialized tools into manageable components.
-
-This approach is intended to make the interface easier to extend and maintain as additional editing capabilities are introduced.
+This approach aims to keep the development environment adaptable without requiring the entire editor to be redesigned whenever new functionality is introduced.
 
 ---
 
-## Technology
+## Technology Stack
 
-CNode is being developed with a focus on native application development.
+CNode uses native application technologies to establish its core development environment.
 
-| Technology | Intended Role |
-|---|---|
-| C++ | Core programming language |
-| CMake | Build configuration and project organization |
-| GLFW | Window creation and input/event handling |
+- **C++** — Core engine and application development.
+- **CMake** — Build configuration and project compilation.
+- **GLFW** — Window creation, input handling, and event management.
+- **Dear ImGui** — Editor interface and interactive development tools.
+- **OpenGL** — Graphics rendering and visual output.
 
-Additional technologies may be introduced as the engine's architecture and requirements evolve.
+Additional technologies may be integrated as the engine's requirements evolve.
 
-## Design Goals
+## Design Philosophy
 
-CNode's long-term design goals include:
+CNode is guided by the idea that visual programming and traditional programming should complement each other rather than compete.
 
-- A flexible visual programming environment.
-- A modular and maintainable C++ codebase.
-- Support for custom node types and native extensions.
-- Clear separation between editor functionality and engine systems.
-- Reusable logic through node groups and structured graphs.
-- Specialized workspaces for different development tasks.
-- An architecture that can evolve alongside the project's needs.
+Visual node graphs provide a way to represent logic and relationships clearly, while native C++ offers the control needed to implement specialized systems and extend the engine beyond its default functionality.
 
-These goals describe the intended direction of the project rather than a guarantee that every feature is already available.
+Modularity is equally important to the project's direction. By separating systems according to their responsibilities, CNode aims to remain maintainable as new features and development tools are introduced.
 
-## Project Structure
+The overall objective is to build an engine that prioritizes flexibility, extensibility, and a cohesive development workflow.
 
-CNode is intended to keep source code, resources, and generated build files organized separately.
+## Long-Term Vision
 
-```text
-CNode/
-├── src/       # Source code
-├── assets/    # Project resources
-├── build/     # Local build output
-├── CMakeLists.txt
-├── .gitignore
-└── README.md
+The long-term vision for CNode is to evolve into a comprehensive, node-driven game development environment.
+
+Its intended direction includes a more capable visual programming system, custom native extensions, reusable logic, integrated editing workspaces, and expanded graphics tools. These capabilities are intended to operate within a consistent architecture rather than as disconnected features.
+
+CNode is an independent project that will continue to evolve according to its technical needs and development goals.
+
+## Development Status
+
+CNode is currently a work in progress. Its architecture, editor functionality, and engine systems are being developed incrementally.
+
+The features and concepts described in this document represent a combination of the project's current direction and its long-term goals. Not every described capability is necessarily implemented or ready for use.
+
+As development continues, the engine's design and functionality will be refined to support its broader vision.
