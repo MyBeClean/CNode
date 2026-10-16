@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.24)
 
 cmake_policy(SET CMP0169 OLD)
@@ -37,16 +38,38 @@ if(NOT stb_POPULATED)
     FetchContent_Populate(stb)
 endif()
 
+set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
+
+if(NOT EXISTS "${IMGUI_DIR}/imgui.cpp")
+    message(FATAL_ERROR "Dear ImGui not found in external/imgui")
+endif()
+
 find_package(OpenGL REQUIRED)
 
 add_executable(CNode
     main.cpp
+
     src/scene/window/editor.cpp
     src/scene/window/logo.cpp
+
+    src/registration/registration.cpp
+    src/registration/registration_data.cpp
+
+    src/tab/windows/scene_editor/scene_editor.cpp
+
+    "${IMGUI_DIR}/imgui.cpp"
+    "${IMGUI_DIR}/imgui_draw.cpp"
+    "${IMGUI_DIR}/imgui_tables.cpp"
+    "${IMGUI_DIR}/imgui_widgets.cpp"
+
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp"
 )
 
 target_include_directories(CNode PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends"
     "${stb_SOURCE_DIR}"
 )
 
