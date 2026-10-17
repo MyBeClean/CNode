@@ -1,4 +1,5 @@
 #include "registration/window_docking.h"
+#include "registration/default_layout.h"
 
 #include "imgui.h"
 
@@ -54,12 +55,9 @@ namespace CNode
             ImGuiDockNodeFlags_None
         );
 
+        SetupDefaultDockLayout();
+
         ImGui::End();
     }
 
-    void SetupDefaultDockLayout()
-    {
-        // Sengaja tidak membuat layout otomatis.
-        // Window baru akan floating dan dapat di-dock manual.
-    }
 }

@@ -145,8 +145,8 @@ add_executable(CNode
     # Registration
     src/registration/registration.cpp
     src/registration/registration_data.cpp
-    
     src/registration/window_docking.cpp
+    src/registration/default_layout.cpp
 
     # Windows
     src/tab/windows/scene_editor/scene_editor.cpp
