@@ -151,6 +151,7 @@ add_executable(CNode
     # Windows
     src/tab/windows/scene_editor/scene_editor.cpp
     src/tab/windows/inspector/inspector.cpp
+    src/tab/windows/node_graph/node_graph.cpp
 
     # Automatically generated attribute registry
     "${CNODE_ATTRIBUTE_REGISTRY_SOURCE}"
