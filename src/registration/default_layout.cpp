@@ -60,6 +60,7 @@ namespace CNode
             );
         }
 
+
         void BuildDefaultLayout(ImGuiID dockspaceID)
         {
             ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -79,10 +80,11 @@ namespace CNode
             ImGuiID dockRight = 0;
             ImGuiID dockLeft = 0;
 
+            // area kanan untuk Inspector dan Object List.
             ImGui::DockBuilderSplitNode(
                 dockspaceID,
                 ImGuiDir_Right,
-                0.27f,
+                0.28f,
                 &dockRight,
                 &dockLeft
             );
@@ -90,6 +92,7 @@ namespace CNode
             ImGuiID dockBottom = 0;
             ImGuiID dockTop = 0;
 
+            // node graph di bawah scene editor.
             ImGui::DockBuilderSplitNode(
                 dockLeft,
                 ImGuiDir_Down,
@@ -98,24 +101,20 @@ namespace CNode
                 &dockTop
             );
 
-            ImGuiID dockObjectList = 0;
-            ImGuiID dockScene = 0;
+            // kiri atas.
+            DockWindow("scene_editor", dockTop);
 
-            ImGui::DockBuilderSplitNode(
-                dockTop,
-                ImGuiDir_Right,
-                0.25f,
-                &dockObjectList,
-                &dockScene
-            );
-
-            DockWindow("scene_editor", dockScene);
-            DockWindow("object_list", dockObjectList);
+            // kiri bawah.
             DockWindow("node_graph", dockBottom);
+
+            // dua window ini berbagi satu dock node,
+            // sehingga Dear ImGui membuat tab otomatis.
             DockWindow("inspector", dockRight);
+            DockWindow("object_list", dockRight);
 
             ImGui::DockBuilderFinish(dockspaceID);
         }
+
     }
 
     void SetupDefaultDockLayout()
